@@ -1,0 +1,58 @@
+#set up the project
+create a .env  file and put your necessary values (the necessary variables and clarification is on dev.env file )
+
+#to run the project and (fetching data ,creating tables,storing data into database)
+
+go run main.go (recommended)
+or, bee run 
+
+
+
+
+#to see the database
+
+docker exec -it property-listing-db-1 /bin/bash
+    psql -U fahimah -d rental_db
+        \dt
+        SELECT Property, City, Country FROM locations LIMIT 10;
+        or,
+        SELECT * FROM "locations" LIMIT 10;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,8 +1,14 @@
 package models
 
+import (
+    "gorm.io/gorm"
+)
+
 type Location struct {
-    ID   int    `db:"id" json:"id"`
-    Name string `db:"name" json:"name"`
+    gorm.Model
+    Property string `gorm:"not null"`
+    City     string `gorm:"not null"`
+    Country  string `gorm:"not null"`
 }
 
 type RentalProperty struct {

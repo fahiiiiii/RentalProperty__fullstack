@@ -1,3 +1,4 @@
+// models/booking.go
 package models
 
 // City represents a city from the Booking.com API

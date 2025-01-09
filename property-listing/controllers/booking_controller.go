@@ -1,3 +1,4 @@
+// controllers/booking_controller.go
 package controllers
 
 import (
@@ -13,34 +14,73 @@ import (
 	"math"
     "property-listing/conf"
 	"property-listing/models" // You'll need to adjust this import path based on your module name
-
-
+    "golang.org/x/time/rate"
+	"context"
+	"github.com/joho/godotenv"
+	"os"
     // "gorm.io/gorm"
-    "regexp"
-    "strconv"
+    // "regexp"
+    // "strconv"
    
     
 )
 
 // BookingController handles all booking.com API related operations
+// type BookingController struct {
+// 	uniqueCountries map[string]bool
+// 	uniqueCities    map[string]bool
+// 	countryCities   map[string][]string
+// 	cityProperties  map[string][]string
+// 	mutex           sync.Mutex
+// }
 type BookingController struct {
-	uniqueCountries map[string]bool
-	uniqueCities    map[string]bool
-	countryCities   map[string][]string
-	cityProperties  map[string][]string
-	mutex           sync.Mutex
+    uniqueCountries map[string]bool
+    uniqueCities    map[string]bool
+    countryCities   map[string][]string
+    cityProperties  map[string][]string
+    mutex           sync.Mutex
+    rateLimiter    *rate.Limiter
+	rapidAPIKey     string //!added rapidApiKey
 }
-
 // NewBookingController creates a new instance of BookingController
 func NewBookingController() *BookingController {
-	return &BookingController{
-		uniqueCountries: make(map[string]bool),
-		uniqueCities:    make(map[string]bool),
-		countryCities:   make(map[string][]string),
-		cityProperties:  make(map[string][]string),
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
 	}
-}
 
+	// Get the RapidAPI key from the environment variable
+	rapidAPIKey := os.Getenv("RAPIDAPI_KEY")
+	if rapidAPIKey == "" {
+		log.Fatalf("RAPIDAPI_KEY is not set in the environment")
+	}
+	
+	//! Created a rate limiter with 5 requests per minute
+    // The first parameter (5) is the rate limit
+    // The second parameter (1) is the burst size
+    return &BookingController{
+        uniqueCountries: make(map[string]bool),
+        uniqueCities:    make(map[string]bool),
+        countryCities:   make(map[string][]string),
+        cityProperties:  make(map[string][]string),
+        rateLimiter:    rate.NewLimiter(rate.Every(12*time.Second), 1), // 5 requests per minute = 1 request per 12 seconds
+		rapidAPIKey:     rapidAPIKey, //! Initialize the rapidAPIKey field
+    }
+}
+//! helper method for rate-limited requests
+func (c *BookingController) makeRateLimitedRequest(req *http.Request) (*http.Response, error) {
+    // Wait for rate limiter
+    err := c.rateLimiter.Wait(context.Background())
+    if err != nil {
+        return nil, fmt.Errorf("rate limiter error: %v", err)
+    }
+
+    client := &http.Client{
+        Timeout: 10 * time.Second,
+    }
+    return client.Do(req)
+}
 // GetSummary returns the current state of all data
 func (c *BookingController) GetSummary() interface{} {
 	return struct {
@@ -56,26 +96,30 @@ func (c *BookingController) GetSummary() interface{} {
 	}
 }
 
-// ProcessAllCities processes all cities using the generated queries
+
+
+//! Modified ProcessAllCities to limit concurrent requests
 func (c *BookingController) ProcessAllCities() error {
-	queries := c.generateQueries()
-	results := make(chan struct{}, len(queries))
-	semaphore := make(chan struct{}, 10)
+    queries := c.generateQueries()
+    results := make(chan struct{}, len(queries))
+    
+    // Reduce concurrent requests to 1 to better control rate limiting
+    semaphore := make(chan struct{}, 1)
 
-	for _, query := range queries {
-		semaphore <- struct{}{}
-		go func(q string) {
-			defer func() { <-semaphore }()
-			c.processCities(q, results)
-		}(query)
-	}
+    for _, query := range queries {
+        semaphore <- struct{}{}
+        go func(q string) {
+            defer func() { <-semaphore }()
+            c.processCities(q, results)
+        }(query)
+    }
 
-	// Wait for all queries to complete
-	for range queries {
-		<-results
-	}
+    // Wait for all queries to complete
+    for range queries {
+        <-results
+    }
 
-	return nil
+    return nil
 }
 
 // ProcessAllProperties processes properties for all cities
@@ -151,22 +195,24 @@ func (c *BookingController) processCities(query string, results chan<- struct{})
 }
 
 func (c *BookingController) fetchCities(query string) ([]models.City, error) {
-	apiURL := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/auto-complete?query=%s", query)
 	
-	req, err := http.NewRequest("GET", apiURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %v", err)
-	}
+	//!using rate limit
+	apiURL := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/auto-complete?query=%s", query)
+    
+    req, err := http.NewRequest("GET", apiURL, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
 
-	req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
-	req.Header.Add("x-rapidapi-key", "79d933f58amsh0baa13f673b03f0p16d4a2jsnb299a967d295")
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+	req.Header.Add("x-rapidapi-key", c.rapidAPIKey) // Use the stored RapidAPI key
+    // req.Header.Add("x-rapidapi-key", "79d933f58amsh0baa13f673b03f0p16d4a2jsnb299a967d295")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error sending request: %v", err)
-	}
-	defer resp.Body.Close()
+    resp, err := c.makeRateLimitedRequest(req)
+    if err != nil {
+        return nil, fmt.Errorf("error sending request: %v", err)
+    }
+    defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -190,39 +236,41 @@ func (c *BookingController) fetchCities(query string) ([]models.City, error) {
 }
 
 func (c *BookingController) processPropertiesForCities() error {
+	//!using limit for req
 	propertyResults := make(chan struct {
-		City       models.CityKey
-		Properties []models.Property
-		Err        error
-	}, len(c.uniqueCities))
+        City       models.CityKey
+        Properties []models.Property
+        Err        error
+    }, len(c.uniqueCities))
 
-	semaphore := make(chan struct{}, 5)
-	var wg sync.WaitGroup
+    // Reduce concurrent requests to 1 to better control rate limiting
+    semaphore := make(chan struct{}, 1)
+    var wg sync.WaitGroup
 
-	for country, cities := range c.countryCities {
-		for _, cityName := range cities {
-			wg.Add(1)
-			
-			go func(city, country string) {
-				defer wg.Done()
-				
-				semaphore <- struct{}{} 
-				defer func() { <-semaphore }()
+    for country, cities := range c.countryCities {
+        for _, cityName := range cities {
+            wg.Add(1)
+            
+            go func(city, country string) {
+                defer wg.Done()
+                
+                semaphore <- struct{}{} 
+                defer func() { <-semaphore }()
 
-				properties, err := c.fetchPropertiesWithRetry(city, country, 3)
-				
-				propertyResults <- struct {
-					City       models.CityKey
-					Properties []models.Property
-					Err        error
-				}{
-					City:       models.CityKey{Name: city, Country: country},
-					Properties: properties,
-					Err:        err,
-				}
-			}(cityName, country)
-		}
-	}
+                properties, err := c.fetchPropertiesWithRetry(city, country, 3)
+                
+                propertyResults <- struct {
+                    City       models.CityKey
+                    Properties []models.Property
+                    Err        error
+                }{
+                    City:       models.CityKey{Name: city, Country: country},
+                    Properties: properties,
+                    Err:        err,
+                }
+            }(cityName, country)
+        }
+    }
 
 	go func() {
 		wg.Wait()
@@ -261,16 +309,23 @@ func (c *BookingController) processPropertyResult(result struct {
 		maxProperties = len(result.Properties)
 	}
 
+	// for _, prop := range result.Properties[:maxProperties] {
+	// 	c.cityProperties[result.City.Name] = append(
+	// 		c.cityProperties[result.City.Name], 
+	// 		fmt.Sprintf("%s (Score: %s, Class: %.1f, City: %s, Country: %s)", 
+	// 			prop.Name, 
+	// 			prop.ReviewScoreWord, 
+	// 			prop.PropertyClass,
+	// 			prop.CityName,
+	// 			prop.Country,
+	// 		),
+	// 	)
+	// }
 	for _, prop := range result.Properties[:maxProperties] {
+		// Store only the property name without additional details
 		c.cityProperties[result.City.Name] = append(
 			c.cityProperties[result.City.Name], 
-			fmt.Sprintf("%s (Score: %s, Class: %.1f, City: %s, Country: %s)", 
-				prop.Name, 
-				prop.ReviewScoreWord, 
-				prop.PropertyClass,
-				prop.CityName,
-				prop.Country,
-			),
+			prop.Name, // Only store the property name
 		)
 	}
 }
@@ -329,19 +384,18 @@ func (c *BookingController) fetchPropertiesForCity(cityName, country string) ([]
 }
 
 func (c *BookingController) fetchPropertyData(apiURL string) ([]models.Property, error) {
-    req, err := http.NewRequest("GET", apiURL, nil)
+    
+	//!using rate limit
+	req, err := http.NewRequest("GET", apiURL, nil)
     if err != nil {
         return nil, err
     }
 
     req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
-    req.Header.Add("x-rapidapi-key", "79d933f58amsh0baa13f673b03f0p16d4a2jsnb299a967d295")
+    // req.Header.Add("x-rapidapi-key", "79d933f58amsh0baa13f673b03f0p16d4a2jsnb299a967d295")
+	req.Header.Add("x-rapidapi-key", c.rapidAPIKey) // Use the stored RapidAPI key
 
-    client := &http.Client{
-        Timeout: 10 * time.Second,
-    }
-    
-    resp, err := client.Do(req)
+    resp, err := c.makeRateLimitedRequest(req)
     if err != nil {
         return nil, err
     }
@@ -378,113 +432,96 @@ func (c *BookingController) fetchPropertyData(apiURL string) ([]models.Property,
 
 
 
-
 func (c *BookingController) SaveToDatabase() error {
-    c.mutex.Lock()
-    defer c.mutex.Unlock()
+    // Create a slice to store all locations
+    var locations []models.Location
 
-    // Begin transaction
-    tx := conf.DB.Begin()
-
-    for country, cities := range c.countryCities {
-        for _, cityName := range cities {
-            // Prepare location with properties
-            location := models.Location{
-                CityName:   cityName,
-                Country:    country,
-            }
-
-            // Get properties for this city
-            if properties, ok := c.cityProperties[cityName]; ok {
-                // Parse and create property records
-                for _, propStr := range properties {
-                    // Parse the property string
-                    // Assuming format: "Name (Score: ReviewScore, Class: PropertyClass, City: CityName, Country: Country)"
-                    prop, err := parsePropertyString(propStr)
-                    if err != nil {
-                        log.Printf("Error parsing property string: %v", err)
-                        continue
-                    }
-
-                    // Add property to location
-                    location.Properties = append(location.Properties, prop)
+    // Iterate through cityProperties to get properties
+    for city, properties := range c.cityProperties {
+        // Find the country for this city
+        var country string
+        for countryName, cities := range c.countryCities {
+            for _, cityName := range cities {
+                if cityName == city {
+                    country = countryName
+                    break
                 }
             }
+        }
 
-            // Create location with associated properties in a single transaction
-            if err := tx.Create(&location).Error; err != nil {
-                tx.Rollback()
-                return fmt.Errorf("failed to create location with properties: %v", err)
+        // Add each property to locations
+        for _, property := range properties {
+            locations = append(locations, models.Location{
+                Property: property,
+                City:    city,
+                Country: country,
+            })
+        }
+    }
+
+    // Batch insert locations
+    result := conf.DB.CreateInBatches(locations, 100)
+    if result.Error != nil {
+        return fmt.Errorf("failed to save locations: %v", result.Error)
+    }
+
+    log.Printf("Successfully saved %d locations to database", len(locations))
+    return nil
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//!To only update the existing data in the database without running the full scraping process again, 
+//!you can create a new endpoint or function that just updates the property names. 
+func (c *BookingController) UpdatePropertyNames() error {
+    var locations []models.Location
+    
+    // Get all locations from database
+    result := conf.DB.Find(&locations)
+    if result.Error != nil {
+        return fmt.Errorf("failed to fetch locations: %v", result.Error)
+    }
+
+    // Update each location's property name
+    for i := range locations {
+        // Extract just the property name by taking everything before " (Score:"
+        if idx := strings.Index(locations[i].Property, " (Score:"); idx != -1 {
+            locations[i].Property = locations[i].Property[:idx]
+            
+            // Save the updated record
+            if err := conf.DB.Save(&locations[i]).Error; err != nil {
+                log.Printf("Error updating location %d: %v", locations[i].ID, err)
+                continue
             }
         }
     }
 
-    // Commit transaction
-    if err := tx.Commit().Error; err != nil {
-        return fmt.Errorf("failed to commit transaction: %v", err)
-    }
-
+    log.Printf("Successfully updated %d property names", len(locations))
     return nil
 }
 
-// Helper function to parse property string
-func parsePropertyString(propStr string) (Property, error) {
-    // Regular expression to extract details
-    re := regexp.MustCompile(`^(.*) \(Score: (.*), Class: ([\d.]+), City: (.*), Country: (.*)\)$`)
-    matches := re.FindStringSubmatch(propStr)
-    
-    if len(matches) < 6 {
-        return Property{}, fmt.Errorf("invalid property string format: %s", propStr)
-    }
 
-    // Convert property class to float
-    propertyClass, err := strconv.ParseFloat(matches[3], 64)
-    if err != nil {
-        return Property{}, fmt.Errorf("error parsing property class: %v", err)
-    }
 
-    return Property{
-        Name:           matches[1],
-        ReviewScore:    matches[2],
-        PropertyClass:  propertyClass,
-        // You might want to add more parsing logic for other fields
-    }, nil
-}
 
-// Optional: Method to bulk insert with optimized performance
-func (c *BookingController) BulkSaveToDatabase() error {
-    c.mutex.Lock()
-    defer c.mutex.Unlock()
 
-    // Prepare bulk locations and properties
-    var locations []Location
-    
-    for country, cities := range c.countryCities {
-        for _, cityName := range cities {
-            location := Location{
-                CityName: cityName,
-                Country:  country,
-            }
 
-            if properties, ok := c.cityProperties[cityName]; ok {
-                for _, propStr := range properties {
-                    prop, err := parsePropertyString(propStr)
-                    if err != nil {
-                        log.Printf("Error parsing property string: %v", err)
-                        continue
-                    }
-                    location.Properties = append(location.Properties, prop)
-                }
-            }
 
-            locations = append(locations, location)
-        }
-    }
 
-    // Bulk create locations with associated properties
-    if err := conf.DB.Create(&locations).Error; err != nil {
-        return fmt.Errorf("failed to bulk create locations: %v", err)
-    }
-
-    return nil
-}

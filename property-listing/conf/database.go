@@ -1,44 +1,52 @@
 package conf
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    // "os"
+    "property-listing/models"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"property-listing/models" // adjust this import path to match your module name
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
 )
 
-// DB is the database instance
 var DB *gorm.DB
 
-// InitDB initializes the database connection
+// func InitDB() {
+//     dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+//         os.Getenv("DB_HOST"),
+//         os.Getenv("DB_USER"),
+//         os.Getenv("DB_PASSWORD"),
+//         os.Getenv("DB_NAME"),
+//         os.Getenv("DB_PORT"),
+//     )
 func InitDB() {
-	var err error
-	
-	// Get database credentials from environment variables
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
+    // Hard-coded database connection parameters
+    DB_HOST := "localhost" // Change this to your DB host if needed
+    DB_USER  := "fahimah"
+    DB_PASSWORD := "fahimah123"
+    DB_NAME := "rental_db"
+    DB_PORT := "5432"
 
-	// Create database connection string
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPassword, dbName)
+    dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+        DB_HOST,
+        DB_USER ,
+        DB_PASSWORD,
+        DB_NAME,
+        DB_PORT,
+    )
 
-	// Connect to database
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
-	}
 
-	// Auto migrate the schema
-	err = DB.AutoMigrate(&models.Location{}, &models.Property{})
-	if err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
-	}
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        log.Fatalf("Failed to connect to database: %v", err)
+    }
 
-	log.Println("Database connected and migrated successfully")
+    // Auto-migrate the Location table
+    err = db.AutoMigrate(&models.Location{})
+    if err != nil {
+        log.Fatalf("Failed to migrate database: %v", err)
+    }
+
+    DB = db
 }

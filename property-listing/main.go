@@ -1,665 +1,3 @@
-// // -----------------db cionnection---------------
-
-// // package main
-
-// // import (
-// //     "database/sql"
-// //     "encoding/json"
-// //     "log"
-// //     "net/http"
-// //     "os"
-// // 	"io"
-// //     "github.com/lib/pq" // Import pq explicitly for array handling
-// //     _ "github.com/lib/pq" // Import the PostgreSQL driver
-// //     "property-listing/models" // Adjust the import path based on your project structure
-// // )
-
-// // const (
-// //     apiKey = "ba3e9fc45bmshe789fe44546bf15p1effc1jsn5a5396d69765" // Replace with your RapidAPI key
-// //     apiUrl = "https://booking-com.p.rapidapi.com/v1/property/list" // Example endpoint
-// // )
-
-// // func fetchData() ([]models.Location, []models.RentalProperty) {
-// //     req, err := http.NewRequest("GET", apiUrl, nil)
-// //     if err != nil {
-// //         log.Fatal(err)
-// //     }
-// //     req.Header.Add("x-rapidapi-key", apiKey)
-// //     req.Header.Add("x-rapidapi-host", "booking-com.p.rapidapi.com")
-
-// //     resp, err := http.DefaultClient.Do(req)
-// //     if err != nil {
-// //         log.Fatal(err)
-// //     }
-// //     defer resp.Body.Close()
-
-
-// // 	respBody, err := io.ReadAll(resp.Body)
-// // 	if err != nil {
-// // 		log.Fatal(err)
-// // 	}
-// // 	log.Println("Raw Response Body:", string(respBody)) // Log the raw response
-// //     // var rentalProperties []models.RentalProperty
-// //     // if err := json.NewDecoder(resp.Body).Decode(&rentalProperties); err != nil {
-// //     //     log.Fatal(err)
-// //     // }
-// // 	var rentalProperties []models.RentalProperty
-// // 	if err := json.Unmarshal(respBody, &rentalProperties); err != nil {
-// // 		log.Fatal(err)
-// // 	}
-
-// //     locationMap := make(map[string]models.Location)
-// //     for _, prop := range rentalProperties {
-// //         locationMap[prop.Name] = models.Location{Name: prop.Name}
-// //     }
-
-// //     locations := make([]models.Location, 0, len(locationMap))
-// //     for _, loc := range locationMap {
-// //         locations = append(locations, loc)
-// //     }
-
-// //     return locations, rentalProperties
-// // }
-
-// // func main() {
-// //     // Manually set environment variables
-// //     os.Setenv("DB_HOST", "localhost")      // Change to your DB host if needed
-// //     os.Setenv("DB_PORT", "5432")            // Default PostgreSQL port
-// //     os.Setenv("DB_USER", "fahimah")         // Your DB username
-// //     os.Setenv("DB_PASSWORD", "fahimah123")  // Your DB password
-// //     os.Setenv("DB_NAME", "rental_db")       // Your DB name
-
-// //     // Set up database connection
-// //     connStr := "host=" + os.Getenv("DB_HOST") +
-// //         " user=" + os.Getenv("DB_USER") +
-// //         " password=" + os.Getenv("DB_PASSWORD") +
-// //         " dbname=" + os.Getenv("DB_NAME") +
-// //         " port=" + os.Getenv("DB_PORT") +
-// //         " sslmode=disable"
-
-// //     log.Println("Connection String:", connStr)
-
-// //     db, err := sql.Open("postgres", connStr)
-// //     if err != nil {
-// //         log.Fatal(err)
-// //     }
-// //     defer db.Close()
-
-// //     // Test the connection
-// //     err = db.Ping()
-// //     if err != nil {
-// //         log.Fatal(err)
-// //     }
-// //     log.Println("Successfully connected to the database!")
-
-// //     locations, rentalProperties := fetchData()
-
-// //     // Insert locations into the database
-// //     for _, location := range locations {
-// //         _, err := db.Exec("INSERT INTO locations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", location.Name)
-// //         if err != nil {
-// //             log.Println("Error inserting location:", err)
-// //         }
-// //     }
-
-// //     // Insert rental properties into the database
-// //     for _, prop := range rentalProperties {
-// //         var locationID int
-// //         err := db.QueryRow("SELECT id FROM locations WHERE name = $1", prop.Name).Scan(&locationID)
-// //         if err != nil {
-// //             log.Println("Error fetching location ID:", err)
-// //             continue
-// //         }
-
-// //         _, err = db.Exec("INSERT INTO rental_properties (name, type, bedrooms, bathrooms, amenities, location_id) VALUES ($1, $2, $3, $4, $5, $6)",
-// //             prop.Name, prop.Type, prop.Bedrooms, prop.Bathrooms, pq.Array(prop.Amenities), locationID)
-// //         if err != nil {
-// //             log.Println("Error inserting rental property:", err)
-// //         }
-// //     }
-
-// //     log.Println("Data inserted successfully!")
-// // }
-
-
-
-
-
-
-
-
-
-// // // ---------------country code extraction from lamguage--------------------
-// // package main
-
-// // import (
-// // 	"encoding/json"
-// // 	"fmt"
-// // 	"io"
-// // 	"log"
-// // 	"net/http"
-// // 	"strings"
-// // 	"regexp"
-// // )
-
-// // // Language struct to match the API response
-// // type Language struct {
-// // 	Typename         string `json:"__typename"`
-// // 	Code             string `json:"code"`
-// // 	CodeAirportTaxis string `json:"codeAirportTaxis"`
-// // 	CountryFlag      string `json:"countryFlag"`
-// // 	Name             string `json:"name"`
-// // }
-
-// // // LanguagesResponse represents the structure of the API response
-// // type LanguagesResponse struct {
-// // 	Data []Language `json:"data"`
-// // }
-
-// // // Function to fetch languages from Booking.com API
-// // func fetchLanguages() ([]Language, error) {
-// // 	// API endpoint and headers
-// // 	url := "https://booking-com18.p.rapidapi.com/languages"
-	
-// // 	// Create a new HTTP request
-// // 	req, err := http.NewRequest("GET", url, nil)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error creating request: %v", err)
-// // 	}
-
-// // 	// Set headers
-// // 	req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
-// // 	req.Header.Add("x-rapidapi-key", "47ae2e1dd1mshc33c535e5f35902p1c98e3jsn28a41b10eef3")
-
-// // 	// Create HTTP client and send request
-// // 	client := &http.Client{}
-// // 	resp, err := client.Do(req)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error sending request: %v", err)
-// // 	}
-// // 	defer resp.Body.Close()
-
-// // 	// Read response body
-// // 	body, err := io.ReadAll(resp.Body)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error reading response body: %v", err)
-// // 	}
-
-// // 	// Check response status
-// // 	if resp.StatusCode != http.StatusOK {
-// // 		return nil, fmt.Errorf("API request failed with status code: %d, body: %s", 
-// // 			resp.StatusCode, string(body))
-// // 	}
-
-// // 	// Parse JSON response
-// // 	var languagesResp LanguagesResponse
-// // 	err = json.Unmarshal(body, &languagesResp)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error parsing JSON: %v", err)
-// // 	}
-
-// // 	return languagesResp.Data, nil
-// // }
-
-// // // Function to extract country from language
-// // func extractCountryFromLanguage(lang Language) string {
-// // 	// Method 1: Extract from parentheses
-// // 	re := regexp.MustCompile(`\(([^)]+)\)$`)
-// // 	matches := re.FindStringSubmatch(lang.Name)
-// // 	if len(matches) > 1 {
-// // 		return strings.ToUpper(matches[1])
-// // 	}
-
-// // 	// Method 2: Use country flag
-// // 	if lang.CountryFlag != "" {
-// // 		return strings.ToUpper(lang.CountryFlag)
-// // 	}
-
-// // 	// Method 3: Extract from code
-// // 	parts := strings.Split(lang.Code, "-")
-// // 	if len(parts) > 1 {
-// // 		return strings.ToUpper(parts[1])
-// // 	}
-
-// // 	return ""
-// // }
-
-// // func main() {
-// // 	// Fetch languages
-// // 	languages, err := fetchLanguages()
-// // 	if err != nil {
-// // 		log.Fatalf("Failed to fetch languages: %v", err)
-// // 	}
-
-// // 	// Process and print languages
-// // 	fmt.Println("Total Languages:", len(languages))
-	
-// // 	for _, lang := range languages {
-// // 		country := extractCountryFromLanguage(lang)
-// // 		fmt.Printf("Language: %s, Code: %s, Country: %s\n", 
-// // 			lang.Name, lang.Code, country)
-// // 	}
-
-// // 	// Optional: Export to JSON file
-// // 	languagesJSON, err := json.MarshalIndent(languages, "", "  ")
-// // 	if err != nil {
-// // 		log.Fatalf("Failed to convert to JSON: %v", err)
-// // 	}
-	
-// // 	fmt.Println("\nJSON Export:\n", string(languagesJSON))
-// // }
-
-
-
-// // // ----------------------------city etraction from auto-complete----------------------------package main
-// // package main
-// // import (
-// // 	"encoding/json"
-// // 	"fmt"
-// // 	"io"
-// // 	"log"
-// // 	"net/http"
-// // 	"strings"
-// // 	"net/url"
-// // )
-
-// // // City struct to match the API response
-// // type City struct {
-// // 	CC1        string  `json:"cc1"`
-// // 	ImageURL   string  `json:"image_url"`
-// // 	Longitude  float64 `json:"longitude"`
-// // 	CityName   string  `json:"city_name"`
-// // 	DestID     string  `json:"dest_id"`
-// // 	Timezone   string  `json:"timezone"`
-// // 	Hotels     int     `json:"hotels"`
-// // 	Label      string  `json:"label"`
-// // 	Country    string  `json:"country"`
-// // 	Region     string  `json:"region"`
-// // 	DestType   string  `json:"dest_type"`
-// // 	Name       string  `json:"name"`
-// // 	Latitude   float64 `json:"latitude"`
-// // 	Type       string  `json:"type"`
-// // }
-
-// // // CitiesResponse represents the structure of the API response
-// // type CitiesResponse struct {
-// // 	Data []City `json:"data"`
-// // }
-
-// // // Function to fetch cities from Booking.com API
-// // func fetchCities(query string) ([]City, error) {
-// // 	// Encode the query parameter
-// // 	encodedQuery := url.QueryEscape(query)
-	
-// // 	// API endpoint and headers
-// // 	apiURL := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/auto-complete?query=%s", encodedQuery)
-	
-// // 	// Create a new HTTP request
-// // 	req, err := http.NewRequest("GET", apiURL, nil)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error creating request: %v", err)
-// // 	}
-
-// // 	// Set headers
-// // 	req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
-// // 	req.Header.Add("x-rapidapi-key", "47ae2e1dd1mshc33c535e5f35902p1c98e3jsn28a41b10eef3")
-
-// // 	// Create HTTP client and send request
-// // 	client := &http.Client{}
-// // 	resp, err := client.Do(req)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error sending request: %v", err)
-// // 	}
-// // 	defer resp.Body.Close()
-
-// // 	// Read response body
-// // 	body, err := io.ReadAll(resp.Body)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error reading response body: %v", err)
-// // 	}
-
-// // 	// Check response status
-// // 	if resp.StatusCode != http.StatusOK {
-// // 		return nil, fmt.Errorf("API request failed with status code: %d, body: %s", 
-// // 			resp.StatusCode, string(body))
-// // 	}
-
-// // 	// Parse JSON response
-// // 	var citiesResp CitiesResponse
-// // 	err = json.Unmarshal(body, &citiesResp)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error parsing JSON: %v", err)
-// // 	}
-
-// // 	return citiesResp.Data, nil
-// // }
-
-// // // Function to extract country code
-// // func extractCountryCode(city City) string {
-// // 	if city.CC1 != "" {
-// // 		return city.CC1
-// // 	}
-// // 	return ""
-// // }
-
-// // func main() {
-// // 	// Example queries
-// // 	queries := []string{
-// // 		"New York",
-// // 		"Los Angeles",
-// // 		"Chicago",
-// // 		// Add more cities as needed
-// // 	}
-
-// // 	// Fetch and process cities for each query
-// // 	for _, query := range queries {
-// // 		cities, err := fetchCities(query)
-// // 		if err != nil {
-// // 			log.Printf("Failed to fetch cities for query '%s': %v", query, err)
-// // 			continue
-// // 		}
-
-// // 		fmt.Printf("\nResults for query: %s\n", query)
-// // 		fmt.Println("Total Cities:", len(cities))
-		
-// // 		for _, city := range cities {
-// // 			countryCode := extractCountryCode(city)
-// // 			fmt.Printf("City: %s, Country: %s, Country Code: %s, Hotels: %d\n", 
-// // 				city.CityName, city.Country, countryCode, city.Hotels)
-// // 		}
-
-// // 		// Optional: Export to JSON
-// // 		citiesJSON, err := json.MarshalIndent(cities, "", "  ")
-// // 		if err != nil {
-// // 			log.Printf("Failed to convert to JSON: %v", err)
-// // 			continue
-// // 		}
-		
-// // 		fmt.Println("\nJSON Export:\n", string(citiesJSON))
-// // 	}
-// // }
-
-// // // Additional helper functions can be added as needed
-// // func normalizeCountryCode(code string) string {
-// // 	return strings.ToUpper(code)
-// // }
-
-// // // Struct for more detailed city information
-// // type DetailedCity struct {
-// // 	Name        string
-// // 	Country     string
-// // 	CountryCode string
-// // 	Coordinates struct {
-// // 		Latitude  float64
-// // 		Longitude float64
-// // 	}
-// // 	HotelCount int
-// // 	Timezone   string
-// // }
-
-// // // Convert City to DetailedCity
-// // func (c City) ToDetailedCity() DetailedCity {
-// // 	return DetailedCity{
-// // 		Name:        c.CityName,
-// // 		Country:     c.Country,
-// // 		CountryCode: normalizeCountryCode(c.CC1),
-// // 		Coordinates: struct {
-// // 			Latitude  float64
-// // 			Longitude float64
-// // 		}{
-// // 			Latitude:  c.Latitude,
-// // 			Longitude: c.Longitude,
-// // 		},
-// // 		HotelCount: c.Hotels,
-// // 		Timezone:   c.Timezone,
-// // 	}
-// // }
-
-
-
-// // ----------------CITIES AND COUNTRIES ETR5ACTION AND THEIR NUMBER AND LIST----------------------------
-// // package main
-
-// // import (
-// // 	"encoding/json"
-// // 	"fmt"
-// // 	"io"
-// // 	"log"
-// // 	"net/http"
-// // 	"os"
-// // 	"strings"
-// // 	"sync"
-// // )
-
-// // // City struct to match the API response
-// // type City struct {
-// // 	CC1        string  `json:"cc1"`
-// // 	ImageURL   string  `json:"image_url"`
-// // 	Longitude  float64 `json:"longitude"`
-// // 	CityName   string  `json:"city_name"`
-// // 	DestID     string  `json:"dest_id"`
-// // 	Timezone   string  `json:"timezone"`
-// // 	Hotels     int     `json:"hotels"`
-// // 	Label      string  `json:"label"`
-// // 	Country    string  `json:"country"`
-// // 	Region     string  `json:"region"`
-// // 	DestType   string  `json:"dest_type"`
-// // 	Name       string  `json:"name"`
-// // 	Latitude   float64 `json:"latitude"`
-// // 	Type       string  `json:"type"`
-// // }
-
-// // // Global maps to track unique countries and cities
-// // var (
-// // 	uniqueCountries = make(map[string]bool)
-// // 	uniqueCities    = make(map[string]bool)
-// // 	countryCities   = make(map[string][]string)
-// // 	mutex           sync.Mutex
-// // )
-
-// // // Function to generate queries dynamically
-// // func generateQueries() []string {
-// // 	// Start with a comprehensive list of alphabet and common prefixes
-// // 	queries := []string{}
-	
-// // 	// Alphabet queries
-// // 	for char := 'A'; char <= 'Z'; char++ {
-// // 		queries = append(queries, string(char))
-// // 	}
-
-// // 	// Common prefixes and patterns
-// // 	prefixes := []string{
-// // 		"a", "the", "new", "old", "big", "small", 
-// // 		"north", "south", "east", "west", "central",
-// // 	}
-
-// // 	for _, prefix := range prefixes {
-// // 		queries = append(queries, prefix)
-// // 	}
-
-// // 	return queries
-// // }
-
-// // // Function to fetch cities from Booking.com API
-// // func fetchCities(query string) ([]City, error) {
-// // 	// Encode the query parameter
-// // 	apiURL := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/auto-complete?query=%s", query)
-	
-// // 	// Create a new HTTP request
-// // 	req, err := http.NewRequest("GET", apiURL, nil)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error creating request: %v", err)
-// // 	}
-
-// // 	// Set headers
-// // 	req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
-// // 	req.Header.Add("x-rapidapi-key", "47ae2e1dd1mshc33c535e5f35902p1c98e3jsn28a41b10eef3")
-
-// // 	// Create HTTP client and send request
-// // 	client := &http.Client{}
-// // 	resp, err := client.Do(req)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error sending request: %v", err)
-// // 	}
-// // 	defer resp.Body.Close()
-
-// // 	// Read response body
-// // 	body, err := io.ReadAll(resp.Body)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error reading response body: %v", err)
-// // 	}
-
-// // 	// Check response status
-// // 	if resp.StatusCode != http.StatusOK {
-// // 		return nil, fmt.Errorf("API request failed with status code: %d, body: %s", 
-// // 			resp.StatusCode, string(body))
-// // 	}
-
-// // 	// Parse JSON response
-// // 	var citiesResp struct {
-// // 		Data []City `json:"data"`
-// // 	}
-// // 	err = json.Unmarshal(body, &citiesResp)
-// // 	if err != nil {
-// // 		return nil, fmt.Errorf("error parsing JSON: %v", err)
-// // 	}
-
-// // 	return citiesResp.Data, nil
-// // }
-
-// // // Function to process cities and update global maps
-// // func processCities(query string, results chan<- struct{}) {
-// // 	defer func() { results <- struct{}{} }()
-
-// // 	cities, err := fetchCities(query)
-// // 	if err != nil {
-// // 		log.Printf("Error fetching cities for query '%s': %v", query, err)
-// // 		return
-// // 	}
-
-// // 	mutex.Lock()
-// // 	defer mutex.Unlock()
-
-// // 	for _, city := range cities {
-// // 		// Normalize country and city names
-// // 		country := strings.TrimSpace(strings.ToUpper(city.Country))
-// // 		cityName := strings.TrimSpace(strings.ToUpper(city.CityName))
-
-// // 		// Track unique countries
-// // 		if country != "" {
-// // 			uniqueCountries[country] = true
-// // 		}
-
-// // 		// Track unique cities
-// // 		if cityName != "" {
-// // 			uniqueCities[cityName] = true
-// // 		}
-
-// // 		// Track cities per country
-// // 		if country != "" && cityName != "" {
-// // 			if _, exists := countryCities[country]; !exists {
-// // 				countryCities[country] = []string{}
-// // 			}
-			
-// // 			// Avoid duplicate cities
-// // 			cityExists := false
-// // 			for _, existingCity := range countryCities[country] {
-// // 				if existingCity == cityName {
-// // 					cityExists = true
-// // 					break
-// // 				}
-// // 			}
-			
-// // 			if !cityExists {
-// // 				countryCities[country] = append(countryCities[country], cityName)
-// // 			}
-// // 		}
-// // 	}
-// // }
-
-// // // Function to save JSON summary to file
-// // func saveJSONSummary(summaryJSON []byte) error {
-// // 	return os.WriteFile("city_summary.json", summaryJSON, 0644)
-// // }
-
-// // // Utility function to get minimum of two integers
-// // func min(a, b int) int {
-// // 	if a < b {
-// // 		return a
-// // 	}
-// // 	return b
-// // }
-
-// // func main() {
-// // 	// Generate queries dynamically
-// // 	queries := generateQueries()
-
-// // 	// Channel for tracking goroutine completion
-// // 	results := make(chan struct{}, len(queries))
-
-// // 	// Limit concurrent goroutines to prevent overwhelming the API
-// // 	semaphore := make(chan struct{}, 10)
-
-// // 	// Process queries
-// // 	for _, query := range queries {
-// // 		semaphore <- struct{}{}
-// // 		go func(q string) {
-// // 			defer func() { <-semaphore }()
-// // 			processCities(q, results)
-// // 		}(query)
-// // 	}
-
-// // 	// Wait for all queries to complete
-// // 	for range queries {
-// // 		<-results
-// // 	}
-
-// // 	// Print detailed results
-// // 	fmt.Println("Extraction Summary:")
-// // 	fmt.Println("-------------------")
-// // 	fmt.Printf("Total Unique Countries: %d\n", len(uniqueCountries))
-// // 	fmt.Printf("Total Unique Cities: %d\n", len(uniqueCities))
-	
-// // 	// Print countries and their cities
-// // 	fmt.Println("\nCountries and Cities:")
-// // 	for country, cities := range countryCities {
-// // 		fmt.Printf("%s (%d cities):\n", country, len(cities))
-// // 		for _, city := range cities {
-// // 			fmt.Printf("  - %s\n", city)
-// // 		}
-// // 		fmt.Println()
-// // 	}
-
-// // 	// Prepare summary data
-// // 	summaryData := struct {
-// // 		Countries     map[string]bool            `json:"countries"`
-// // 		Cities        map[string]bool            `json:"cities"`
-// // 		CountryCities map[string][]string        `json:"country_cities"`
-// // 	}{
-// // 		Countries:     uniqueCountries,
-// // 		Cities:        uniqueCities,
-// // 		CountryCities: countryCities,
-// // 	}
-
-// // 	// Convert to JSON
-// // 	summaryJSON, err := json.MarshalIndent(summaryData, "", "  ")
-// // 	if err != nil {
-// // 		log.Fatalf("Failed to create JSON summary: %v", err)
-// // 	}
-
-// // 	// Save JSON to file
-// // 	err = saveJSONSummary(summaryJSON)
-// // 	if err != nil {
-// // 		log.Printf("Failed to save JSON summary: %v", err)
-// // 	} else {
-// // 		fmt.Println("JSON Summary saved to city_summary.json")
-// // 	}
-
-// // 	// Optional: Print a snippet of the JSON
-// // 	fmt.Println("\nJSON Summary Snippet:")
-// // 	fmt.Println(string(summaryJSON[:min(len(summaryJSON), 500)]))
-// // }
-
 
 
 // // // ---------------properties under cities-------------------
@@ -1958,61 +1296,77 @@
 
 
 //!main.go
+
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	
-	"property-listing/conf"
-	"property-listing/controllers"
+    "encoding/json"
+    "fmt"
+    "log"
+    "os"
+    
+    "property-listing/conf"
+    "property-listing/controllers"
 )
 
 func main() {
-	// Initialize database
-	conf.InitDB()
-	// config.InitDB()
+    
+    // Initialize database
+    conf.InitDB()
 
-	// Create a new controller instance
-	controller := controllers.NewBookingController()
+    // Create a new controller instance
+    controller := controllers.NewBookingController()
 
-	// Process all cities
-	fmt.Println("Processing cities...")
-	err := controller.ProcessAllCities()
-	if err != nil {
-		log.Fatalf("Failed to process cities: %v", err)
-	}
+    // //!for updating property
+    // bookingController := controllers.NewBookingController()
+    // err := bookingController.UpdatePropertyNames()
+    // if err != nil {
+    //     log.Fatal(err)
+    // }
+    // log.Println("Property names updated successfully")
 
-	// Process properties for all cities
-	fmt.Println("Processing properties...")
-	err = controller.ProcessAllProperties()
-	if err != nil {
-		log.Fatalf("Failed to process properties: %v", err)
-	}
 
-	// Save data to database
-	fmt.Println("Saving to database...")
-	err = controller.SaveToDatabase()
-	if err != nil {
-		log.Fatalf("Failed to save to database: %v", err)
-	}
 
-	// Get the final summary
-	summary := controller.GetSummary()
 
-	// Convert to JSON
-	summaryJSON, err := json.MarshalIndent(summary, "", "  ")
-	if err != nil {
-		log.Fatalf("Failed to create JSON summary: %v", err)
-	}
 
-	// Save JSON to file
-	err = os.WriteFile("city_summary.json", summaryJSON, 0644)
-	if err != nil {
-		log.Printf("Failed to save JSON summary: %v", err)
-	} else {
-		fmt.Println("JSON Summary saved to city_summary.json")
-	}
+
+
+    // Process all cities
+    fmt.Println("Processing cities...")
+    err := controller.ProcessAllCities()
+    if err != nil {
+        log.Fatalf("Failed to process cities: %v", err)
+    }
+
+    // Process properties for all cities
+    fmt.Println("Processing properties...")
+    err = controller.ProcessAllProperties()
+    if err != nil {
+        log.Fatalf("Failed to process properties: %v", err)
+    }
+
+    // Save data to database
+    fmt.Println("Saving data to database...")
+    err = controller.SaveToDatabase()
+    if err != nil {
+        log.Fatalf("Failed to save to database: %v", err)
+    }
+
+    // Get the final summary
+    summary := controller.GetSummary()
+
+    // Convert to JSON
+    summaryJSON, err := json.MarshalIndent(summary, "", "  ")
+    if err != nil {
+        log.Fatalf("Failed to create JSON summary: %v", err)
+    }
+
+    // Save JSON to file
+    err = os.WriteFile("city_summary.json", summaryJSON, 0644)
+    if err != nil {
+        log.Printf("Failed to save JSON summary: %v", err)
+    } else {
+        fmt.Println("JSON Summary saved to city_summary.json")
+    }
 }
+
