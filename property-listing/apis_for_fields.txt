@@ -513,6 +513,368 @@ tag:"Property"
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+----------------------------
+can you please make another function for fetching images for each destId as well as hotelId:from this api (the stored destId will be the input of hotelId in that api
+
+*images
+
+=>from
+    curl --request GET \
+	--url 'https://booking-com18.p.rapidapi.com/stays/get-photos?hotelId=2291137' \
+	--header 'x-rapidapi-host: booking-com18.p.rapidapi.com' \
+	--header 'x-rapidapi-key: 3426928f2amsh2e4d4b598c36eefp10e72ajsn894381081bec'
+
+data:
+__typename:"hoteldescriptionphotosResults"
+data:2291137:0:
+0:1
+1:
+2:484656765
+3:0:
+id:3
+tag:"Property building"
+1:
+id:1000000001
+tag:"Property"
+**4:->images by type
+    0:"/xdata/images/hotel/square60/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    1:"/xdata/images/hotel/max1024x768/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    2:"/xdata/images/hotel/max100/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    3:"/xdata/images/hotel/max200/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    4:"/xdata/images/hotel/max300/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    5:"/xdata/images/hotel/max400/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    6:"/xdata/images/hotel/max500/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    7:"/xdata/images/hotel/max600/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    8:"/xdata/images/hotel/max700/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    9:"/xdata/images/hotel/max800/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    10:"/xdata/images/hotel/max900/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    11:"/xdata/images/hotel/max1000/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    12:"/xdata/images/hotel/max1100/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    13:"/xdata/images/hotel/max1200/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    14:"/xdata/images/hotel/max1300/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    15:"/xdata/images/hotel/max1400/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    16:"/xdata/images/hotel/max1500/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    17:"/xdata/images/hotel/max1600/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    18:"/xdata/images/hotel/max1700/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    19:"/xdata/images/hotel/max1800/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    20:"/xdata/images/hotel/max1900/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    21:"/xdata/images/hotel/max2000/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    22:"/xdata/images/hotel/max2100/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    23:"/xdata/images/hotel/max2200/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    24:"/xdata/images/hotel/max2300/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    25:"/xdata/images/hotel/max2400/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    26:"/xdata/images/hotel/max2500/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    27:"/xdata/images/hotel/max2600/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    28:"/xdata/images/hotel/max2700/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    29:"/xdata/images/hotel/max2800/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    30:"/xdata/images/hotel/max2900/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+    31:"/xdata/images/hotel/max3000/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o="
+1:
+
+
+
+
+
+
+
+
+ChatGPT said:
+ChatGPT
+To fetch images for each destId (which you mentioned will be used as hotelId in the API), we can create a new function in your BookingController to handle the API request to fetch the images.
+
+Here’s how you can structure this function based on the provided curl example and the data format:
+
+Step 1: Define a Model for Image Data
+First, let's define the necessary data structures to hold the image URLs.
+
+go
+Copy code
+// Image represents an image associated with a hotel
+type Image struct {
+    ID     int    `json:"id"`
+    Tag    string `json:"tag"`
+    URLs   []string `json:"urls"` // List of image URLs
+}
+Step 2: Create a Method to Fetch Hotel Images
+This method will take a hotelId and make an API request to get the images for that hotel. We will use the net/http package to make the GET request and parse the response.
+
+go
+Copy code
+// FetchHotelImages fetches images for a given hotelId
+func (c *BookingController) FetchHotelImages(hotelID string) ([]Image, error) {
+    // Construct the API URL for fetching hotel images
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/get-photos?hotelId=%s", hotelID)
+
+    // Make the GET request
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
+
+    // Set the headers
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", "3426928f2amsh2e4d4b598c36eefp10e72ajsn894381081bec")
+
+    // Execute the request
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making API request: %v", err)
+    }
+    defer resp.Body.Close()
+
+    // Parse the response body
+    var apiResponse struct {
+        Data map[string][]struct {
+            ID   int    `json:"id"`
+            Tag  string `json:"tag"`
+            Images []struct {
+                URL string `json:"url"`
+            } `json:"images"`
+        } `json:"data"`
+    }
+
+    // Decode the response body into the struct
+    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+        return nil, fmt.Errorf("error decoding response: %v", err)
+    }
+
+    // Collect image data
+    var images []Image
+    for _, imageData := range apiResponse.Data {
+        var imageURLs []string
+        for _, img := range imageData.Images {
+            imageURLs = append(imageURLs, img.URL)
+        }
+        images = append(images, Image{
+            ID:   imageData.ID,
+            Tag:  imageData.Tag,
+            URLs: imageURLs,
+        })
+    }
+
+    return images, nil
+}
+Step 3: Use the Function to Fetch Images for Each Hotel
+Now, you can loop over your destIds (or hotelIds) and use this function to fetch images.
+
+For example, in your ProcessAllHotelDescriptions function, you can fetch and store the images like this:
+
+go
+Copy code
+// Process all hotel descriptions and fetch images
+func (c *BookingController) ProcessAllHotelDescriptions() error {
+    log.Println("Starting to process hotel descriptions and images...")
+
+    c.mutex.Lock()
+    var allDestIds []string
+    processedIds := make(map[string]bool)
+
+    // Collect all unique destIds from each city
+    for city, properties := range c.cityProperties {
+        log.Printf("Processing properties for city: %s", city)
+        for _, propID := range properties {
+            if !processedIds[propID] {
+                allDestIds = append(allDestIds, propID)
+                processedIds[propID] = true
+            }
+        }
+    }
+    c.mutex.Unlock()
+
+    log.Printf("Found %d unique hotels to process", len(allDestIds))
+
+    // Create a channel to store results
+    results := make(chan *models.HotelDetails, len(allDestIds))
+    var wg sync.WaitGroup
+
+    // Create semaphore for rate limiting
+    semaphore := make(chan struct{}, 1) // Process one request at a time
+
+    // Process each destId
+    for _, destID := range allDestIds {
+        wg.Add(1)
+        go func(id string) {
+            defer wg.Done()
+
+            // Acquire semaphore
+            semaphore <- struct{}{}
+            defer func() { <-semaphore }()
+
+            // Wait for rate limiter
+            err := c.rateLimiter.Wait(context.Background())
+            if err != nil {
+                log.Printf("Rate limiter error for hotel %s: %v", id, err)
+                return
+            }
+
+            details, err := c.fetchHotelDescriptionFromAPI(id)
+            if err != nil {
+                log.Printf("Error fetching description for hotel %s: %v", id, err)
+                return
+            }
+
+            // Fetch hotel images
+            images, err := c.FetchHotelImages(id)
+            if err != nil {
+                log.Printf("Error fetching images for hotel %s: %v", id, err)
+                return
+            }
+
+            details.Images = images // Add images to hotel details
+
+            results <- details
+        }(destID)
+    }
+
+    // Close results channel when all goroutines are done
+    go func() {
+        wg.Wait()
+        close(results)
+    }()
+
+    // Collect and store results
+    hotelDescriptions := make(map[string]*models.HotelDetails)
+    for detail := range results {
+        if detail != nil {
+            hotelDescriptions[detail.HotelID] = detail
+            log.Printf("Successfully processed hotel: %s - %s", detail.HotelID, detail.PropertyName)
+        }
+    }
+
+    // Save results to file
+    outputData, err := json.MarshalIndent(hotelDescriptions, "", "    ")
+    if err != nil {
+        return fmt.Errorf("error marshaling hotel descriptions: %v", err)
+    }
+
+    err = os.WriteFile("hotel_descriptions_with_images.json", outputData, 0644)
+    if err != nil {
+        return fmt.Errorf("error saving hotel descriptions to file: %v", err)
+    }
+
+    log.Printf("Successfully processed and saved descriptions and images for %d hotels", len(hotelDescriptions))
+    return nil
+}
+Explanation of Changes:
+FetchHotelImages:
+
+Fetches the images for a given hotel by making a GET request to the booking-com18.p.rapidapi.com API.
+It returns a list of images, each with its ID, Tag, and URLs (array of different sizes of images).
+Modifying ProcessAllHotelDescriptions:
+
+Inside the loop, after fetching hotel descriptions, the FetchHotelImages function is called to retrieve and associate images with the hotel.
+The images are added to the HotelDetails structure.
+Saving Output:
+
+The output is saved in hotel_descriptions_with_images.json to include both descriptions and images for each hotel.
+This approach integrates both hotel descriptions and images into the result. Let me know if you'd like further adjustments!
+
+
+
+
+
+
+You said:
+isnt need struct for that function
+?
+
+2/2
+
+ChatGPT said:
+ChatGPT
+Yes, you're absolutely right! We need to define a struct for the response that we will be getting from the API in the FetchHotelImages function. This struct will map to the expected JSON structure of the response, so that we can properly decode and access the data.
+
+Here's how the structure for the API response can be defined:
+go
+Copy code
+// Image represents a single image associated with a hotel
+type Image struct {
+    URL string `json:"url"`  // Image URL in various resolutions
+}
+
+// HotelImagesResponse represents the structure of the API response for fetching hotel images
+type HotelImagesResponse struct {
+    Data map[string][]struct {
+        ID     int    `json:"id"`
+        Tag    string `json:"tag"`
+        Images []Image `json:"images"` // List of images with URLs
+    } `json:"data"`
+}
+Adjust the FetchHotelImages function with the struct:
+go
+Copy code
+// FetchHotelImages fetches images for a given hotelId
+func (c *BookingController) FetchHotelImages(hotelID string) ([]Image, error) {
+    // Construct the API URL for fetching hotel images
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/get-photos?hotelId=%s", hotelID)
+
+    // Make the GET request
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
+
+    // Set the headers
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", "3426928f2amsh2e4d4b598c36eefp10e72ajsn894381081bec")
+
+    // Execute the request
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making API request: %v", err)
+    }
+    defer resp.Body.Close()
+
+    // Parse the response body into the struct
+    var apiResponse HotelImagesResponse
+
+    // Decode the response body
+    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+        return nil, fmt.Errorf("error decoding response: %v", err)
+    }
+
+    // Collect image data
+    var images []Image
+    for _, imageData := range apiResponse.Data {
+        for _, img := range imageData.Images {
+            images = append(images, img)
+        }
+    }
+
+    return images, nil
+}
+Explanation of Changes:
+HotelImagesResponse struct: This struct reflects the structure of the response JSON you shared. It includes an inner struct for each hotel's image data, which has an ID, Tag, and a list of Image objects (holding the URLs).
+
+Image struct: This struct holds the URL of each image, representing the image in different sizes.
+
+Decoding the JSON: We're using json.NewDecoder().Decode(&apiResponse) to decode the response into the HotelImagesResponse struct.
+
+Returning Images: After parsing the response, we loop through the Data map and append each Image to the final images slice, which is returned to the caller.
+
+By using this struct, we ensure that the data is mapped correctly and we can work with the parsed response from the API. Let me know if this helps!
+
+
+
+
+
+
+You said:
+can you please make another function for fetching rating reviews for each destId as well as hotelId:from this api (the stored destId will be the input of hotelId in that api
+
 *Rating
 =>from curl --request GET \
 	--url 'https://booking-com18.p.rapidapi.com/stays/review-featured?hotelId=6162805' \
@@ -558,4 +920,101 @@ tag:"Property"
     stay_status:"stayed"
     author:
     average_score_out_of_10:9
+
+ChatGPT said:
+ChatGPT
+To fetch the ratings and reviews for each hotel using the provided API, we will need to define a function similar to the one used for fetching hotel images. We will also define the appropriate struct to parse the response from the API.
+
+Here's how we can do that:
+
+Define the Structs for the Rating and Review Response
+go
+Copy code
+// Review represents a single review for a hotel
+type Review struct {
+    ReviewID             int    `json:"review_id"`
+    Title                string `json:"title"`
+    Pros                 string `json:"pros"`
+    Cons                 string `json:"cons"`
+    Date                 string `json:"date"`
+    LanguageCode         string `json:"languagecode"`
+    TravelPurpose        string `json:"travel_purpose"`
+    StayStatus           string `json:"stay_status"`
+    AverageScoreOutOf10  float64 `json:"average_score_out_of_10"`
+}
+
+// HotelReviewResponse represents the structure of the API response for fetching hotel reviews
+type HotelReviewResponse struct {
+    FeaturedReviewsTitle  string   `json:"featured_reviews_title"`
+    VPMFavorableReviewCount int    `json:"vpm_favorable_review_count"`
+    FeaturedReviews       []Review `json:"vpm_featured_reviews"`
+}
+Create the Function to Fetch Hotel Reviews
+go
+Copy code
+// FetchHotelReviews fetches the reviews for a given hotelId
+func (c *BookingController) FetchHotelReviews(hotelID string) (*HotelReviewResponse, error) {
+    // Construct the API URL for fetching hotel reviews
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/review-featured?hotelId=%s", hotelID)
+
+    // Make the GET request
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
+
+    // Set the headers
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", "3426928f2amsh2e4d4b598c36eefp10e72ajsn894381081bec")
+
+    // Execute the request
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making API request: %v", err)
+    }
+    defer resp.Body.Close()
+
+    // Parse the response body into the struct
+    var apiResponse HotelReviewResponse
+
+    // Decode the response body
+    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+        return nil, fmt.Errorf("error decoding response: %v", err)
+    }
+
+    return &apiResponse, nil
+}
+Explanation:
+Review struct: This struct holds individual review details such as the review ID, title, pros, cons, date, and score.
+
+HotelReviewResponse struct: This struct is used to hold the entire response from the API. It contains the FeaturedReviewsTitle, VPMFavorableReviewCount, and the FeaturedReviews array, which holds all the individual Review items.
+
+FetchHotelReviews function:
+
+It accepts the hotelID as input.
+Makes an HTTP GET request to the API with the appropriate headers.
+Decodes the response into the HotelReviewResponse struct.
+Returns the parsed reviews data.
+Example Usage
+You can call this function within your application like this:
+
+go
+Copy code
+// Assuming c is your controller
+hotelID := "6162805"  // Replace with the actual hotel ID
+reviews, err := c.FetchHotelReviews(hotelID)
+if err != nil {
+    log.Printf("Error fetching reviews for hotel %s: %v", hotelID, err)
+    return
+}
+
+// Use the reviews data
+log.Printf("Found %d reviews for hotel %s", len(reviews.FeaturedReviews), hotelID)
+This should fetch the reviews for the hotel and provide them to your application in a structured format. Let me know if you need further modifications or explanations!
+
+
+
+
+
 
