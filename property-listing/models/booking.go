@@ -34,10 +34,28 @@ type Property struct {
 	DestID            string  `json:"dest_id"`
 	CityName          string  `json:"city_name"`
 	Country           string  `json:"country"`
+
+	
 }
 
 // CityKey represents a unique identifier for a city
 type CityKey struct {
 	Name    string
 	Country string
+}
+
+// HotelDetails represents the full hotel information
+type HotelDetails struct {
+    HotelID    string   `json:"hotel_id"`
+    PropertyName string  `json:"property_name"`
+    Type        string  `json:"type"`
+	Bedrooms    int     `json:"bedrooms"` // New field for block_count
+    Bathroom    int     `json:"bathroom"`
+    Amenities   []Facility `json:"amenities"`
+	Description  string `json:"description"`
+}
+
+// Facility represents a hotel facility/amenity
+type Facility struct {
+    Name string `json:"name"`
 }

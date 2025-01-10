@@ -324,7 +324,7 @@ total_blocks:2
 host_since:null
 b_blackout_android_prepayment_copy:0
 payment_detail:
-block_count:2
+**block_count:2**
 address_trans:""
 is_crimea:0
 is_city_center:null

@@ -18,6 +18,8 @@ import (
 	"context"
 	"github.com/joho/godotenv"
 	"os"
+    // "github.com/astaxie/beego"
+
     // "gorm.io/gorm"
     // "regexp"
     // "strconv"
@@ -41,6 +43,8 @@ type BookingController struct {
     mutex           sync.Mutex
     rateLimiter    *rate.Limiter
 	rapidAPIKey     string //!added rapidApiKey
+	// web.Controller
+    
 }
 // NewBookingController creates a new instance of BookingController
 func NewBookingController() *BookingController {
@@ -309,18 +313,7 @@ func (c *BookingController) processPropertyResult(result struct {
 		maxProperties = len(result.Properties)
 	}
 
-	// for _, prop := range result.Properties[:maxProperties] {
-	// 	c.cityProperties[result.City.Name] = append(
-	// 		c.cityProperties[result.City.Name], 
-	// 		fmt.Sprintf("%s (Score: %s, Class: %.1f, City: %s, Country: %s)", 
-	// 			prop.Name, 
-	// 			prop.ReviewScoreWord, 
-	// 			prop.PropertyClass,
-	// 			prop.CityName,
-	// 			prop.Country,
-	// 		),
-	// 	)
-	// }
+	
 	for _, prop := range result.Properties[:maxProperties] {
 		// Store only the property name without additional details
 		c.cityProperties[result.City.Name] = append(
@@ -351,6 +344,8 @@ func (c *BookingController) fetchPropertiesWithRetry(cityName, country string, m
     return nil, fmt.Errorf("failed to fetch properties after %d attempts", maxRetries)
 }
 
+
+
 func (c *BookingController) fetchPropertiesForCity(cityName, country string) ([]models.Property, error) {
     uniqueProperties := make(map[string]models.Property)
     searchQueries := []string{
@@ -362,14 +357,14 @@ func (c *BookingController) fetchPropertiesForCity(cityName, country string) ([]
     for _, query := range searchQueries {
         encodedQuery := url.QueryEscape(query)
         apiURL := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/auto-complete?query=%s", encodedQuery)
-        
+
         properties, err := c.fetchPropertyData(apiURL)
         if err != nil {
-            continue
+            continue // Skip errors and proceed with other queries
         }
 
         for _, prop := range properties {
-            if prop.DestID != "" {
+            if prop.DestID != "" { // Ensure destId exists
                 uniqueProperties[prop.DestID] = prop
             }
         }
@@ -382,18 +377,14 @@ func (c *BookingController) fetchPropertiesForCity(cityName, country string) ([]
 
     return result, nil
 }
-
 func (c *BookingController) fetchPropertyData(apiURL string) ([]models.Property, error) {
-    
-	//!using rate limit
-	req, err := http.NewRequest("GET", apiURL, nil)
+    req, err := http.NewRequest("GET", apiURL, nil)
     if err != nil {
         return nil, err
     }
 
     req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
-    // req.Header.Add("x-rapidapi-key", "79d933f58amsh0baa13f673b03f0p16d4a2jsnb299a967d295")
-	req.Header.Add("x-rapidapi-key", c.rapidAPIKey) // Use the stored RapidAPI key
+    req.Header.Add("x-rapidapi-key", c.rapidAPIKey) // Use the stored RapidAPI key
 
     resp, err := c.makeRateLimitedRequest(req)
     if err != nil {
@@ -410,27 +401,108 @@ func (c *BookingController) fetchPropertyData(apiURL string) ([]models.Property,
         return nil, fmt.Errorf("rate limit exceeded")
     }
 
+    // Unmarshal the JSON response
     var response struct {
-        Data []models.Property `json:"data"`
+        Data []struct {
+            DestID   string `json:"dest_id"`
+            Name     string `json:"name"`
+            // Address  string `json:"address"`
+            CityName string `json:"city_name"`
+            // Add other fields if needed
+        } `json:"data"`
     }
-    
+
     err = json.Unmarshal(body, &response)
     if err != nil {
         return nil, err
     }
 
-    return response.Data, nil
+    // Map the API response to your models.Property struct
+    properties := make([]models.Property, 0, len(response.Data))
+    for _, item := range response.Data {
+        properties = append(properties, models.Property{
+            DestID:   item.DestID,
+            Name:     item.Name,
+            // Address:  item.Address,
+            CityName: item.CityName,
+            // Map other fields as necessary
+        })
+    }
+
+    return properties, nil
 }
 
 
+// func (c *BookingController) fetchPropertiesForCity(cityName, country string) ([]models.Property, error) {
+//     uniqueProperties := make(map[string]models.Property)
+//     searchQueries := []string{
+//         cityName,
+//         fmt.Sprintf("%s hotels", cityName),
+//         fmt.Sprintf("%s accommodation", cityName),
+//     }
 
+//     for _, query := range searchQueries {
+//         encodedQuery := url.QueryEscape(query)
+//         apiURL := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/auto-complete?query=%s", encodedQuery)
+        
+//         properties, err := c.fetchPropertyData(apiURL)
+//         if err != nil {
+//             continue
+//         }
 
+//         for _, prop := range properties {
+//             if prop.DestID != "" {
+//                 uniqueProperties[prop.DestID] = prop
+//             }
+//         }
+//     }
 
+//     result := make([]models.Property, 0, len(uniqueProperties))
+//     for _, prop := range uniqueProperties {
+//         result = append(result, prop)
+//     }
 
+//     return result, nil
+// }
 
+// func (c *BookingController) fetchPropertyData(apiURL string) ([]models.Property, error) {
+    
+// 	//!using rate limit
+// 	req, err := http.NewRequest("GET", apiURL, nil)
+//     if err != nil {
+//         return nil, err
+//     }
 
+//     req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+//     // req.Header.Add("x-rapidapi-key", "79d933f58amsh0baa13f673b03f0p16d4a2jsnb299a967d295")
+// 	req.Header.Add("x-rapidapi-key", c.rapidAPIKey) // Use the stored RapidAPI key
 
+//     resp, err := c.makeRateLimitedRequest(req)
+//     if err != nil {
+//         return nil, err
+//     }
+//     defer resp.Body.Close()
 
+//     body, err := io.ReadAll(resp.Body)
+//     if err != nil {
+//         return nil, err
+//     }
+
+//     if resp.StatusCode == 429 || strings.Contains(string(body), "Too many requests") {
+//         return nil, fmt.Errorf("rate limit exceeded")
+//     }
+
+//     var response struct {
+//         Data []models.Property `json:"data"`
+//     }
+    
+//     err = json.Unmarshal(body, &response)
+//     if err != nil {
+//         return nil, err
+//     }
+
+//     return response.Data, nil
+// }
 
 func (c *BookingController) SaveToDatabase() error {
     // Create a slice to store all locations
@@ -485,10 +557,407 @@ func (c *BookingController) SaveToDatabase() error {
 
 
 
+// // Add these methods to your existing BookingController
+// func (c *BookingController) ProcessAllHotelDetails() error {
+//     log.Println("Starting to process hotel details...")
+    
+//     c.mutex.Lock()
+//     // Get all unique destIds from cityProperties
+// 	var allDestIds []string
+// 	processedIds := make(map[string]bool)
+
+// 	for city, properties := range c.cityProperties {
+// 		for _, propID := range properties {
+// 			if !processedIds[propID] {
+// 				allDestIds = append(allDestIds, propID)
+// 				processedIds[propID] = true
+// 			}
+// 		}
+// 	}
+//     // var allDestIds []string
+//     // processedIds := make(map[string]bool)
+    
+//     // // Collect all unique destIds from each city
+//     // for city, properties := range c.cityProperties {
+//     //     log.Printf("Processing properties for city: %s", city)
+//     //     for _, propID := range properties {
+//     //         if !processedIds[propID] {
+//     //             allDestIds = append(allDestIds, propID)
+//     //             processedIds[propID] = true
+//     //         }
+//     //     }
+//     // }
+//     c.mutex.Unlock()
+
+//     log.Printf("Found %d unique hotels to process", len(allDestIds))
+
+//     // Create a channel to store results
+//     results := make(chan *models.HotelDetails, len(allDestIds))
+//     var wg sync.WaitGroup
+    
+//     // Create semaphore for rate limiting
+// 	semaphore := make(chan struct{}, 1) // Allows one request at a time
+// 	for _, destID := range allDestIds {
+// 		wg.Add(1)
+// 		go func(id string) {
+// 			defer wg.Done()
+// 			semaphore <- struct{}{} // Acquire semaphore
+// 			defer func() { <-semaphore }() // Release semaphore
+
+// 			err := c.rateLimiter.Wait(context.Background()) // Rate limiter
+// 			if err != nil {
+// 				log.Printf("Rate limiter error for hotel %s: %v", id, err)
+// 				return
+// 			}
+
+// 			details, err := c.fetchHotelDetailsFromAPI(id)
+// 			if err != nil {
+// 				log.Printf("Error fetching details for hotel %s: %v", id, err)
+// 				return
+// 			}
+// 			results <- details
+// 		}(destID)
+// 	}
+
+//     // semaphore := make(chan struct{}, 1) // Process one request at a time
+
+//     // // Process each destId
+//     // for _, destID := range allDestIds {
+//     //     wg.Add(1)
+//     //     go func(id string) {
+//     //         defer wg.Done()
+
+//     //         // Acquire semaphore
+//     //         semaphore <- struct{}{}
+//     //         defer func() { <-semaphore }()
+
+//     //         // Wait for rate limiter
+//     //         err := c.rateLimiter.Wait(context.Background())
+//     //         if err != nil {
+//     //             log.Printf("Rate limiter error for hotel %s: %v", id, err)
+//     //             return
+//     //         }
+
+//     //         details, err := c.fetchHotelDetailsFromAPI(id)
+//     //         if err != nil {
+//     //             log.Printf("Error fetching details for hotel %s: %v", id, err)
+//     //             return
+//     //         }
+
+//     //         results <- details
+//     //     }(destID)
+//     // }
+
+//     // Close results channel when all goroutines are done
+//     go func() {
+//         wg.Wait()
+//         close(results)
+//     }()
+
+//     // Collect and store results
+//     hotelDetails := make(map[string]*models.HotelDetails)
+//     for detail := range results {
+//         if detail != nil {
+//             hotelDetails[detail.HotelID] = detail
+//             log.Printf("Successfully processed hotel: %s - %s (Bedrooms: %d)", detail.HotelID, detail.PropertyName, detail.Bedrooms)
+//         }
+//     }
+// 	hotelDetails[detail.HotelID] = detail
+//     // Save results to file
+//     outputData, err := json.MarshalIndent(hotelDetails, "", "    ")
+//     if err != nil {
+//         return fmt.Errorf("error marshaling hotel details: %v", err)
+//     }
+
+//     err = os.WriteFile("hotel_details.json", outputData, 0644)
+//     if err != nil {
+//         return fmt.Errorf("error saving hotel details to file: %v", err)
+//     }
+
+//     log.Printf("Successfully processed and saved details for %d hotels", len(hotelDetails))
+//     return nil
+// }
+// ProcessAllHotelDetails processes all hotel details
+func (c *BookingController) ProcessAllHotelDetails() error {
+    log.Println("Starting to process hotel details...")
+
+    c.mutex.Lock()
+    var allDestIds []string
+    processedIds := make(map[string]bool)
+
+    // Collect all unique destIds from each city
+    for _, properties := range c.cityProperties {
+        for _, propID := range properties {
+            if !processedIds[propID] {
+                allDestIds = append(allDestIds, propID)
+                processedIds[propID] = true
+            }
+        }
+    }
+    c.mutex.Unlock()
+
+    log.Printf("Found %d unique hotels to process", len(allDestIds))
+
+    // Create a channel to store results``
+    results := make(chan *models.HotelDetails, len(allDestIds))
+    var wg sync.WaitGroup
+
+    // Create semaphore for rate limiting
+    semaphore := make(chan struct{}, 1) // Process one request at a time
+
+    // Process each destId
+    for _, destID := range allDestIds {
+        wg.Add(1)
+        go func(id string) {
+            defer wg.Done()
+
+            // Acquire semaphore
+            semaphore <- struct{}{}
+            defer func() { <-semaphore }()
+
+            // Wait for rate limiter
+            err := c.rateLimiter.Wait(context.Background())
+            if err != nil {
+                log.Printf("Rate limiter error for hotel %s: %v", id, err)
+                return
+            }
+
+            details, err := c.fetchHotelDetailsFromAPI(id)
+            if err != nil {
+                log.Printf("Error fetching details for hotel %s: %v", id, err)
+                return
+            }
+
+            results <- details
+        }(destID)
+    }
+
+    // Close results channel when all goroutines are done
+    go func() {
+        wg.Wait()
+        close(results)
+    }()
+
+    // Collect and store results
+    hotelDetails := make(map[string]*models.HotelDetails)
+    for detail := range results {
+        if detail != nil {
+            hotelDetails[detail.HotelID] = detail
+            log.Printf("Successfully processed hotel: %s - %s (Bedrooms: %d)", detail.HotelID, detail.PropertyName, detail.Bedrooms)
+        }
+    }
+
+    // Save results to file
+    outputData, err := json.MarshalIndent(hotelDetails, "", "    ")
+    if err != nil {
+        return fmt.Errorf("error marshaling hotel details: %v", err)
+    }
+
+    err = os.WriteFile("hotel_details.json", outputData, 0644)
+    if err != nil {
+        return fmt.Errorf("error saving hotel details to file: %v", err)
+    }
+
+    log.Printf("Successfully processed and saved details for %d hotels", len(hotelDetails))
+    return nil
+}
+
+func (c *BookingController) fetchHotelDetailsFromAPI(hotelID string) (*models.HotelDetails, error) {
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/detail?hotelId=%s&checkinDate=2025-01-09&checkoutDate=2025-01-23&units=metric", hotelID)
+    
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
+
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", c.rapidAPIKey)
+
+    client := &http.Client{Timeout: 10 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making request: %v", err)
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response: %v", err)
+    }
+
+    var apiResponse struct {
+        Data struct {
+            HotelID              string `json:"hotel_id"`
+            HotelName            string `json:"hotel_name"`
+            AccommodationTypeName string `json:"accommodation_type_name"`
+            Rooms                map[string]struct {
+                PrivateBathroomCount int `json:"private_bathroom_count"`
+            } `json:"rooms"`
+            FacilitiesBlock struct {
+                Facilities []struct {
+                    Name string `json:"name"`
+                } `json:"facilities"`
+            } `json:"facilities_block"`
+			BlockCount int `json:"block_count"` // Field for bedroom count
+        } `json:"data"`
+    }
+
+    if err := json.Unmarshal(body, &apiResponse); err != nil {
+        return nil, fmt.Errorf("error parsing JSON: %v", err)
+    }
+
+    details := &models.HotelDetails{
+        HotelID:     apiResponse.Data.HotelID,
+        PropertyName: apiResponse.Data.HotelName,
+        Type:        apiResponse.Data.AccommodationTypeName,
+		Bedrooms:    apiResponse.Data.BlockCount, // Assign block_count to Bedrooms
+        Bathroom:    0, // Default to 0, as we'll extract it from the rooms
+		Amenities:   make([]models.Facility, 0),
+    }
+
+    // Extract bathroom count from first room
+    for _, room := range apiResponse.Data.Rooms {
+        details.Bathroom = room.PrivateBathroomCount
+        break
+    }
+
+    // Extract facilities
+    for _, facility := range apiResponse.Data.FacilitiesBlock.Facilities {
+        if facility.Name != "" {
+            details.Amenities = append(details.Amenities, models.Facility{Name: facility.Name})
+        }
+    }
+
+    return details, nil
+}
 
 
 
+// Fetch hotel description from the API
+func (c *BookingController) fetchHotelDescriptionFromAPI(hotelID string) ([]models.HotelDetails, error) {
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/get-description?hotelId=%s", hotelID)
+    
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
 
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", c.rapidAPIKey)
+
+    client := &http.Client{Timeout: 10 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making request: %v", err)
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response: %v", err)
+    }
+
+    var apiResponse struct {
+        Data struct {
+            Description string `json:"description"`
+        } `json:"data"`
+    }
+
+    if err := json.Unmarshal(body, &apiResponse); err != nil {
+        return nil, fmt.Errorf("error parsing JSON: %v", err)
+    }
+
+    return []models.HotelDetails{
+        HotelID: hotelID,
+        Description: apiResponse.Data.Description,
+    }, nil
+}
+
+// Process all hotel descriptions
+func (c *BookingController) ProcessAllHotelDescriptions() error {
+    log.Println("Starting to process hotel descriptions...")
+
+    c.mutex.Lock()
+    var allDestIds []string
+    processedIds := make(map[string]bool)
+
+    // Collect all unique destIds from each city
+    for city, properties := range c.cityProperties {
+        log.Printf("Processing properties for city: %s", city)
+        for _, propID := range properties {
+            if !processedIds[propID] {
+                allDestIds = append(allDestIds, propID)
+                processedIds[propID] = true
+            }
+        }
+    }
+    c.mutex.Unlock()
+
+    log.Printf("Found %d unique hotels to process", len(allDestIds))
+
+    // Create a channel to store results
+    results := make(chan []models.HotelDetails, len(allDestIds))
+    var wg sync.WaitGroup
+
+    // Create semaphore for rate limiting
+    semaphore := make(chan struct{}, 1) // Process one request at a time
+
+    // Process each destId
+    for _, destID := range allDestIds {
+        wg.Add(1)
+        go func(id string) {
+            defer wg.Done()
+
+            // Acquire semaphore
+            semaphore <- struct{}{}
+            defer func() { <-semaphore }()
+
+            // Wait for rate limiter
+            err := c.rateLimiter.Wait(context.Background())
+            if err != nil {
+                log.Printf("Rate limiter error for hotel %s: %v", id, err)
+                return
+            }
+
+            details, err := c.fetchHotelDescriptionFromAPI(id)
+            if err != nil {
+                log.Printf("Error fetching description for hotel %s: %v", id, err)
+                return
+            }
+
+            results <- details
+        }(destID)
+    }
+
+    // Close results channel when all goroutines are done
+    go func() {
+        wg.Wait()
+        close(results)
+    }()
+
+    // Collect and store results
+    hotelDescriptions := make(map[string]*HotelDetails)
+    for detail := range results {
+        if detail != nil {
+            hotelDescriptions[detail.HotelID] = detail
+            log.Printf("Successfully processed hotel: %s - %s", detail.HotelID, detail.PropertyName)
+        }
+    }
+
+    // Save results to file
+    outputData, err := json.MarshalIndent(hotelDescriptions, "", "    ")
+    if err != nil {
+        return fmt.Errorf("error marshaling hotel descriptions: %v", err)
+    }
+
+    err = os.WriteFile("hotel_descriptions.json", outputData, 0644)
+    if err != nil {
+        return fmt.Errorf("error saving hotel descriptions to file: %v", err)
+    }
+
+    log.Printf("Successfully processed and saved descriptions for %d hotels", len(hotelDescriptions))
+    return nil
+}
 //!To only update the existing data in the database without running the full scraping process again, 
 //!you can create a new endpoint or function that just updates the property names. 
 func (c *BookingController) UpdatePropertyNames() error {
