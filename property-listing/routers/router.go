@@ -1,10 +1,12 @@
 package routers
 
 import (
-	"property-listing/controllers"
-	beego "github.com/beego/beego/v2/server/web"
+    "property-listing/controllers"
+
+    "github.com/beego/beego/v2/server/web"
 )
 
 func init() {
-    beego.Router("/", &controllers.MainController{})
+    web.Router("/v1/property/list", &controllers.BookingController{}, "get:ListProperties")
+    web.Router("/", &controllers.BookingController{}, "get:Index")
 }

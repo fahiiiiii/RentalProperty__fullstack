@@ -59,3 +59,16 @@ type HotelDetails struct {
 type Facility struct {
     Name string `json:"name"`
 }
+
+
+type CategorizedImages struct {
+    PropertyBuilding []string `json:"property_building"`
+    Property         []string `json:"property"`
+    Room             []string `json:"room"`
+    // Add more categories as needed
+}
+
+type RatingAndReviews struct {
+    AverageScoreOutOf10       float64 `json:"average_score_out_of_10"`
+    VpmFavorableReviewCount   int     `json:"vpm_favorable_review_count"`
+}

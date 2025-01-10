@@ -18,6 +18,9 @@ import (
 	"context"
 	"github.com/joho/godotenv"
 	"os"
+
+
+    "github.com/beego/beego/v2/server/web"
     // "github.com/astaxie/beego"
 
     // "gorm.io/gorm"
@@ -43,7 +46,7 @@ type BookingController struct {
     mutex           sync.Mutex
     rateLimiter    *rate.Limiter
 	rapidAPIKey     string //!added rapidApiKey
-	// web.Controller
+	web.Controller
     
 }
 // NewBookingController creates a new instance of BookingController
@@ -503,13 +506,12 @@ func (c *BookingController) fetchPropertyData(apiURL string) ([]models.Property,
 
 //     return response.Data, nil
 // }
-
 func (c *BookingController) SaveToDatabase() error {
-    // Create a slice to store all locations
-    var locations []models.Location
+    // Create a map to store unique city-country pairs
+    uniqueLocations := make(map[string]string)
 
     // Iterate through cityProperties to get properties
-    for city, properties := range c.cityProperties {
+    for city := range c.cityProperties {
         // Find the country for this city
         var country string
         for countryName, cities := range c.countryCities {
@@ -521,14 +523,19 @@ func (c *BookingController) SaveToDatabase() error {
             }
         }
 
-        // Add each property to locations
-        for _, property := range properties {
-            locations = append(locations, models.Location{
-                Property: property,
-                City:    city,
-                Country: country,
-            })
+        // Store the unique city-country pair
+        if country != "" {
+            uniqueLocations[city] = country
         }
+    }
+
+    // Create a slice to store locations for batch insert
+    var locations []models.Location
+    for city, country := range uniqueLocations {
+        locations = append(locations, models.Location{
+            City:    city,
+            Country: country,
+        })
     }
 
     // Batch insert locations
@@ -537,9 +544,45 @@ func (c *BookingController) SaveToDatabase() error {
         return fmt.Errorf("failed to save locations: %v", result.Error)
     }
 
-    log.Printf("Successfully saved %d locations to database", len(locations))
+    log.Printf("Successfully saved %d unique locations to database", len(locations))
     return nil
 }
+// func (c *BookingController) SaveToDatabase() error {
+//     // Create a slice to store all locations
+//     var locations []models.Location
+
+//     // Iterate through cityProperties to get properties
+//     for city, properties := range c.cityProperties {
+//         // Find the country for this city
+//         var country string
+//         for countryName, cities := range c.countryCities {
+//             for _, cityName := range cities {
+//                 if cityName == city {
+//                     country = countryName
+//                     break
+//                 }
+//             }
+//         }
+
+//         // Add each property to locations
+//         for _, property := range properties {
+//             locations = append(locations, models.Location{
+//                 Property: property,
+//                 City:    city,
+//                 Country: country,
+//             })
+//         }
+//     }
+
+//     // Batch insert locations
+//     result := conf.DB.CreateInBatches(locations, 100)
+//     if result.Error != nil {
+//         return fmt.Errorf("failed to save locations: %v", result.Error)
+//     }
+
+//     log.Printf("Successfully saved %d locations to database", len(locations))
+//     return nil
+// }
 
 
 
@@ -856,10 +899,10 @@ func (c *BookingController) fetchHotelDescriptionFromAPI(hotelID string) ([]mode
     if err != nil {
         return nil, fmt.Errorf("error reading response: %v", err)
     }
-
     var apiResponse struct {
         Data struct {
             Description string `json:"description"`
+            PropertyName string `json:"property_name"` // Assuming this field exists in the API response
         } `json:"data"`
     }
 
@@ -867,12 +910,32 @@ func (c *BookingController) fetchHotelDescriptionFromAPI(hotelID string) ([]mode
         return nil, fmt.Errorf("error parsing JSON: %v", err)
     }
 
-    return []models.HotelDetails{
-        HotelID: hotelID,
+    // Create an instance of HotelDetails
+    hotelDetails := models.HotelDetails{
+        HotelID:     hotelID,
         Description: apiResponse.Data.Description,
-    }, nil
+        PropertyName: apiResponse.Data.PropertyName, // Assuming this field exists
+    }
+
+    return []models.HotelDetails{hotelDetails}, nil // Return as a slice
+
+    // var apiResponse struct {
+    //     Data struct {
+    //         Description string `json:"description"`
+    //     } `json:"data"`
+    // }
+
+    // if err := json.Unmarshal(body, &apiResponse); err != nil {
+    //     return nil, fmt.Errorf("error parsing JSON: %v", err)
+    // }
+
+    // return []models.HotelDetails{
+    //     HotelID: hotelID,
+    //     Description: apiResponse.Data.Description,
+    // }, nil
 }
 
+// Process all hotel descriptions
 // Process all hotel descriptions
 func (c *BookingController) ProcessAllHotelDescriptions() error {
     log.Println("Starting to process hotel descriptions...")
@@ -936,10 +999,10 @@ func (c *BookingController) ProcessAllHotelDescriptions() error {
     }()
 
     // Collect and store results
-    hotelDescriptions := make(map[string]*HotelDetails)
-    for detail := range results {
-        if detail != nil {
-            hotelDescriptions[detail.HotelID] = detail
+    hotelDescriptions := make(map[string]*models.HotelDetails)
+    for detailSlice := range results {
+        for _, detail := range detailSlice { // Iterate over the slice
+            hotelDescriptions[detail.HotelID] = &detail // Store the pointer to detail
             log.Printf("Successfully processed hotel: %s - %s", detail.HotelID, detail.PropertyName)
         }
     }
@@ -959,38 +1022,450 @@ func (c *BookingController) ProcessAllHotelDescriptions() error {
     return nil
 }
 //!To only update the existing data in the database without running the full scraping process again, 
-//!you can create a new endpoint or function that just updates the property names. 
-func (c *BookingController) UpdatePropertyNames() error {
-    var locations []models.Location
+// //!you can create a new endpoint or function that just updates the property names. 
+// func (c *BookingController) UpdatePropertyNames() error {
+//     var locations []models.Location
     
-    // Get all locations from database
-    result := conf.DB.Find(&locations)
-    if result.Error != nil {
-        return fmt.Errorf("failed to fetch locations: %v", result.Error)
-    }
+//     // Get all locations from database
+//     result := conf.DB.Find(&locations)
+//     if result.Error != nil {
+//         return fmt.Errorf("failed to fetch locations: %v", result.Error)
+//     }
 
-    // Update each location's property name
-    for i := range locations {
-        // Extract just the property name by taking everything before " (Score:"
-        if idx := strings.Index(locations[i].Property, " (Score:"); idx != -1 {
-            locations[i].Property = locations[i].Property[:idx]
+//     // Update each location's property name
+//     for i := range locations {
+//         // Extract just the property name by taking everything before " (Score:"
+//         if idx := strings.Index(locations[i].Property, " (Score:"); idx != -1 {
+//             locations[i].Property = locations[i].Property[:idx]
             
-            // Save the updated record
-            if err := conf.DB.Save(&locations[i]).Error; err != nil {
-                log.Printf("Error updating location %d: %v", locations[i].ID, err)
+//             // Save the updated record
+//             if err := conf.DB.Save(&locations[i]).Error; err != nil {
+//                 log.Printf("Error updating location %d: %v", locations[i].ID, err)
+//                 continue
+//             }
+//         }
+//     }
+
+//     log.Printf("Successfully updated %d property names", len(locations))
+//     return nil
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//!saving Rental Property
+func (c *BookingController) SaveRentalPropertiesToDatabase() error {
+    // Create a slice to store rental properties
+    var rentalProperties []models.RentalProperty
+
+    // Iterate through cityProperties to get property details
+    for city, properties := range c.cityProperties {
+        for _, propertyName := range properties {
+            // Fetch additional details for each property
+            propertyDetails, err := c.fetchPropertyDetails(propertyName, city)
+            if err != nil {
+                log.Printf("Error fetching details for property %s in city %s: %v", propertyName, city, err)
                 continue
             }
+
+            // Create a RentalProperty instance
+            rentalProperty := models.RentalProperty{
+                PropertyName: propertyDetails.PropertyName,
+                Type:         propertyDetails.Type,
+                Bedrooms:     propertyDetails.Bedrooms,
+                Bathrooms:    propertyDetails.Bathrooms,
+                Amenities:    propertyDetails.Amenities,
+                LocationID:   propertyDetails.LocationID,
+            }
+
+            // Append to the slice
+            rentalProperties = append(rentalProperties, rentalProperty)
         }
     }
 
-    log.Printf("Successfully updated %d property names", len(locations))
+    // Batch insert rental properties
+    result := conf.DB.CreateInBatches(rentalProperties, 100)
+    if result.Error != nil {
+        return fmt.Errorf("failed to save rental properties: %v", result.Error)
+    }
+
+    log.Printf("Successfully saved %d rental properties to database", len(rentalProperties))
     return nil
+}
+
+// Example function to fetch property details (you need to implement this)
+func (c *BookingController) fetchPropertyDetails(propertyName, city string) (*models.RentalProperty, error) {
+    // Implement the logic to fetch property details based on propertyName and city
+    // This is a placeholder function and should return the necessary details
+    return &models.RentalProperty{
+        PropertyName: propertyName,
+        Type:         "Apartment", // Example type
+        Bedrooms:     2,           // Example number of bedrooms
+        Bathrooms:    1,           // Example number of bathrooms
+        Amenities:    []string{"WiFi", "Pool"}, // Example amenities
+        LocationID:   1,           // Example location ID (you need to determine how to get this)
+    }, nil
 }
 
 
 
+// ListCities returns the list of available cities
+func (c *BookingController) ListCities() {
+    var cities []string
+    conf.DB.Model(&models.RentalProperty{}).Distinct().Pluck("city", &cities)
+    c.Data["json"] = cities
+    c.ServeJSON()
+}
 
 
+//!Fetching images:
+// FetchHotelImagesFromAPI fetches images for a given hotelId and categorizes them
+func (c *BookingController) fetchHotelImagesFromAPI(hotelID string) (*models.CategorizedImages, error) {
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/get-photos?hotelId=%s", hotelID)
+    
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
 
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", c.rapidAPIKey)
 
+    client := &http.Client{Timeout: 10 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making request: %v", err)
+    }
+    defer resp.Body.Close()
 
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response: %v", err)
+    }
+
+    var apiResponse struct {
+        Data []struct {
+            ID    int      `json:"id"`
+            Tag   string   `json:"tag"`
+            Images []string `json:"images"`
+        } `json:"data"`
+    }
+
+    if err := json.Unmarshal(body, &apiResponse); err != nil {
+        return nil, fmt.Errorf("error parsing JSON: %v", err)
+    }
+
+    categorizedImages := &models.CategorizedImages{}
+    for _, item := range apiResponse.Data {
+        switch item.Tag {
+        case "Property building":
+            categorizedImages.PropertyBuilding = append(categorizedImages.PropertyBuilding, item.Images...)
+        case "Property":
+            categorizedImages.Property = append(categorizedImages.Property, item.Images...)
+        case "Room":
+            categorizedImages.Room = append(categorizedImages.Room, item.Images...)
+        // Add more categories as needed
+        default:
+            // Handle other categories or ignore
+        }
+    }
+
+    return categorizedImages, nil
+}
+
+// Function to process all hotel images
+func (c *BookingController) ProcessAllHotelImages() error {
+    log.Println("Starting to process hotel images...")
+
+    c.mutex.Lock()
+    var allDestIds []string
+    processedIds := make(map[string]bool)
+
+    // Collect all unique destIds from each city
+    for _, properties := range c.cityProperties {
+        for _, propID := range properties {
+            if !processedIds[propID] {
+                allDestIds = append(allDestIds, propID)
+                processedIds[propID] = true
+            }
+        }
+    }
+    c.mutex.Unlock()
+
+    log.Printf("Found %d unique hotels to process images for", len(allDestIds))
+
+    // Create a channel to store results
+    results := make(chan struct {
+        HotelID          string
+        CategorizedImages *models.CategorizedImages
+        Err              error
+    }, len(allDestIds))
+    var wg sync.WaitGroup
+
+    // Create semaphore for rate limiting
+    semaphore := make(chan struct{}, 1) // Process one request at a time
+
+    // Process each destId
+    for _, destID := range allDestIds {
+        wg.Add(1)
+        go func(id string) {
+            defer wg.Done()
+
+            // Acquire semaphore
+            semaphore <- struct{}{}
+            defer func() { <-semaphore }()
+
+            // Wait for rate limiter
+            err := c.rateLimiter.Wait(context.Background())
+            if err != nil {
+                log.Printf("Rate limiter error for hotel %s: %v", id, err)
+                return
+            }
+
+            categorizedImages, err := c.fetchHotelImagesFromAPI(id)
+            results <- struct {
+                HotelID          string
+                CategorizedImages *models.CategorizedImages
+                Err              error
+            }{
+                HotelID:          id,
+                CategorizedImages: categorizedImages,
+                Err:              err,
+            }
+        }(destID)
+    }
+
+    // Close results channel when all goroutines are done
+    go func() {
+        wg.Wait()
+        close(results)
+    }()
+
+    // Collect and store results
+    hotelImages := make(map[string]*models.CategorizedImages)
+    for result := range results {
+        if result.Err != nil {
+            log.Printf("Error fetching images for hotel %s: %v", result.HotelID, result.Err)
+            continue
+        }
+        hotelImages[result.HotelID] = result.CategorizedImages
+        log.Printf("Successfully processed images for hotel: %s", result.HotelID)
+    }
+
+    // Save results to file or database as needed
+    // Here you would implement the logic to save hotelImages
+
+    log.Printf("Successfully processed and saved images for %d hotels", len(hotelImages))
+    return nil
+}
+
+//!for rating and review:
+// FetchHotelRatingAndReviewsFromAPI fetches rating and review count for a given hotelId
+func (c *BookingController) fetchHotelRatingAndReviewsFromAPI(hotelID string) (*models.RatingAndReviews, error) {
+    url := fmt.Sprintf("https://booking-com18.p.rapidapi.com/stays/review-featured?hotelId=%s", hotelID)
+    
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, fmt.Errorf("error creating request: %v", err)
+    }
+
+    req.Header.Add("x-rapidapi-host", "booking-com18.p.rapidapi.com")
+    req.Header.Add("x-rapidapi-key", c.rapidAPIKey)
+
+    client := &http.Client{Timeout: 10 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("error making request: %v", err)
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, fmt.Errorf("error reading response: %v", err)
+    }
+
+    var apiResponse struct {
+        VpmFavorableReviewCount int `json:"vpm_favorable_review_count"`
+        VpmFeaturedReviews      []struct {
+            AverageScoreOutOf10 float64 `json:"average_score_out_of_10"`
+        } `json:"vpm_featured_reviews"`
+    }
+
+    if err := json.Unmarshal(body, &apiResponse); err != nil {
+        return nil, fmt.Errorf("error parsing JSON: %v", err)
+    }
+
+    ratingAndReviews := &models.RatingAndReviews{
+        VpmFavorableReviewCount: apiResponse.VpmFavorableReviewCount,
+    }
+
+    if len(apiResponse.VpmFeaturedReviews) > 0 {
+        ratingAndReviews.AverageScoreOutOf10 = apiResponse.VpmFeaturedReviews[0].AverageScoreOutOf10
+    }
+
+    return ratingAndReviews, nil
+}
+
+// Function to process all hotel ratings and reviews
+func (c *BookingController) ProcessAllHotelRatingsAndReviews() error {
+    log.Println("Starting to process hotel ratings and reviews...")
+
+    c.mutex.Lock()
+    var allDestIds []string
+    processedIds := make(map[string]bool)
+
+    // Collect all unique destIds from each city
+    for _, properties := range c.cityProperties {
+        for _, propID := range properties {
+            if !processedIds[propID] {
+                allDestIds = append(allDestIds, propID)
+                processedIds[propID] = true
+            }
+        }
+    }
+    c.mutex.Unlock()
+
+    log.Printf("Found %d unique hotels to process ratings and reviews for", len(allDestIds))
+
+    // Create a channel to store results
+    results := make(chan struct {
+        HotelID          string
+        RatingAndReviews *models.RatingAndReviews
+        Err              error
+    }, len(allDestIds))
+    var wg sync.WaitGroup
+
+    // Create semaphore for rate limiting
+    semaphore := make(chan struct{}, 1) // Process one request at a time
+
+    // Process each destId
+    for _, destID := range allDestIds {
+        wg.Add(1)
+        go func(id string) {
+            defer wg.Done()
+
+            // Acquire semaphore
+            semaphore <- struct{}{}
+            defer func() { <-semaphore }()
+
+            // Wait for rate limiter
+            err := c.rateLimiter.Wait(context.Background())
+            if err != nil {
+                log.Printf("Rate limiter error for hotel %s: %v", id, err)
+                return
+            }
+
+            ratingAndReviews, err := c.fetchHotelRatingAndReviewsFromAPI(id)
+            results <- struct {
+                HotelID          string
+                RatingAndReviews *models.RatingAndReviews
+                Err              error
+            }{
+                HotelID:          id,
+                RatingAndReviews: ratingAndReviews,
+                Err:              err,
+            }
+        }(destID)
+    }
+
+    // Close results channel when all goroutines are done
+    go func() {
+        wg.Wait()
+        close(results)
+    }()
+
+    // Collect and store results
+    hotelRatingsAndReviews := make(map[string]*models.RatingAndReviews)
+    for result := range results {
+        if result.Err != nil {
+            log.Printf("Error fetching ratings and reviews for hotel %s: %v", result.HotelID, result.Err)
+            continue
+        }
+        hotelRatingsAndReviews[result.HotelID] = result.RatingAndReviews
+        log.Printf("Successfully processed ratings and reviews for hotel: %s", result.HotelID)
+    }
+
+    // Save results to file or database as needed
+    // Here you would implement the logic to save hotelRatingsAndReviews
+
+    log.Printf("Successfully processed and saved ratings and reviews for %d hotels", len(hotelRatingsAndReviews))
+    return nil
+}
+
+//! SavePropertyDetails saves property details including description, images, rating, and reviews to the PropertyDetails table
+func (c *BookingController) SavePropertyDetails(propertyID int, description string, images []string, rating float64, reviews []string) error {
+    // Create a PropertyDetails instance
+    propertyDetails := models.PropertyDetails{
+        PropertyID:        propertyID,
+        Description:       description,
+        Images:            images,
+        Rating:            rating,
+        Reviews:           reviews,
+    }
+
+    // Save to the database
+    result := conf.DB.Create(&propertyDetails)
+    if result.Error != nil {
+        return result.Error
+    }
+
+    log.Printf("Successfully saved property details for property ID %d", propertyID)
+    return nil
+}
+
+// Example usage of SavePropertyDetails
+func (c *BookingController) ProcessPropertyDetails() {
+    // Example data
+    propertyID := 1
+    description := "A beautiful property with an amazing view."
+    images := []string{
+        "/xdata/images/hotel/square60/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o=",
+        "/xdata/images/hotel/max1024x768/484656765.jpg?k=aaa04cb98edd1c367ceb4bca7b73867d501154a2ea4f3ef39a3ddcfeeb1e8fe8&o=",
+    }
+    rating := 9.0
+    reviews := []string{
+        "Staff was really helpful and polite.",
+        "Rooms very clean and big enough, amazing view.",
+        "Proximity to core NYC.",
+    }
+
+    err := c.SavePropertyDetails(propertyID, description, images, rating, reviews)
+    if err != nil {
+        log.Fatalf("Failed to save property details: %v", err)
+    }
+}
+//! ListProperties handles the /v1/property/list endpoint
+func (c *BookingController) ListProperties() {
+    location := c.GetString("location")
+    if location == "" {
+        c.Ctx.Output.SetStatus(400)
+        c.Ctx.Output.Body([]byte("Location is required"))
+        return
+    }
+
+    var properties []models.RentalProperty
+    result := conf.DB.Preload("Location").Where("location_id IN (SELECT id FROM locations WHERE city = ?)", location).Find(&properties)
+    if result.Error != nil {
+        c.Ctx.Output.SetStatus(500)
+        c.Ctx.Output.Body([]byte("Failed to fetch properties"))
+        return
+    }
+
+    c.Data["json"] = properties
+    c.ServeJSON()
+    
+}
+
+func (c *BookingController) Index() {
+    c.TplName = "index.html"
+}

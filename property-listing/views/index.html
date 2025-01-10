@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Arab Emirates Vacation Rentals & Rent By Owner Homes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            background-color: #003580;
+            padding: 15px;
+            color: white;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .date-input {
+            width: 150px;
+            padding: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .guests-input {
+            width: 100px;
+            padding: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .search-button {
+            padding: 10px 20px;
+            background-color: #00a699;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        h1 {
+            margin: 20px 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .property-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .property-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .property-info {
+            padding: 15px;
+        }
+
+        .property-type {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .property-name {
+            font-size: 16px;
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .property-price {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .rating {
+            color: #ffd700;
+            margin: 5px 0;
+        }
+
+        .view-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #00a699;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .favorite-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="search-container">
+            <input type="text" class="search-input" id="locationInput" placeholder="Dubai, Dubai, United Arab Emirates">
+            <input type="date" class="date-input">
+            <input type="number" class="guests-input" placeholder="Guests">
+            <button class="search-button" onclick="loadProperties()">Search</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>United Arab Emirates Vacation Rentals & Rent By Owner Homes</h1>
+        <div class="property-grid" id="propertyGrid"></div>
+    </div>
+
+    <script>
+        function loadProperties() {
+            var location = $("#locationInput").val();
+            if (!location) {
+                alert("Please enter a location");
+                return;
+            }
+
+            $.ajax({
+                url: "/v1/property/list",
+                method: "GET",
+                data: { location: location },
+                success: function(data) {
+                    renderProperties(data);
+                },
+                error: function() {
+                    alert("Failed to load properties");
+                }
+            });
+        }
+
+        function renderProperties(properties) {
+            const grid = document.getElementById('propertyGrid');
+            grid.innerHTML = ''; // Clear existing properties
+            properties.forEach(property => {
+                const propertyCard = `
+                    <div class="property-card">
+                        <img src="${property.ImageURL}" alt="${property.PropertyName}" class="property-image">
+                        <button class="favorite-button">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <div class="property-info">
+                            <div class="property-type">${property.Type}</div>
+                            <h3 class="property-name">${property.PropertyName}</h3>
+                            <div class="property-price">From ${property.Price}</div>
+                            <div class="rating">
+                                ${"★".repeat(Math.floor(property.Rating))}${property.Rating % 1 >= 0.5 ? "½" : ""}
+                                <span style="color: #666">(${property.Reviews} reviews)</span>
+                            </div>
+                            <div class="property-description">${property.Description}</div>
+                            <button class="view-button">View Availability</button>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', propertyCard);
+            });
+        }
+
+        $(document).ready(function() {
+            // Load properties for the default location on page load if needed
+            const properties = [
+            {
+                image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23ddd'/%3E%3C/svg%3E",
+                type: "Villa",
+                name: "SLS Superior Villa in Dubai Paradise Luxury Villa in Palm...",
+                price: "From 595,745",
+                rating: 4.5,
+                reviews: 12
+            },
+            // Add more properties as needed
+        ];
+
+        function renderProperties() {
+            const grid = document.getElementById('propertyGrid');
+            properties.forEach(property => {
+                const propertyCard = `
+                    <div class="property-card">
+                        <img src="${property.image}" alt="${property.name}" class="property-image">
+                        <button class="favorite-button">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <div class="property-info">
+                            <div class="property-type">${property.type}</div>
+                            <h3 class="property-name">${property.name}</h3>
+                            <div class="property-price">${property.price}</div>
+                            <div class="rating">
+                                ${"★".repeat(Math.floor(property.rating))}${property.rating % 1 >= 0.5 ? "½" : ""}
+                                <span style="color: #666">(${property.reviews} reviews)</span>
+                            </div>
+                            <button class="view-button">View Availability</button>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', propertyCard);
+            });
+        }
+
+        $(document).ready(function() {
+            renderProperties();
+        });
+        // loadProperties();
+        });
+    </script>
+</body>
+</html>
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Arab Emirates Vacation Rentals & Rent By Owner Homes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            background-color: #003580;
+            padding: 15px;
+            color: white;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .date-input {
+            width: 150px;
+            padding: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .guests-input {
+            width: 100px;
+            padding: 10px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        .search-button {
+            padding: 10px 20px;
+            background-color: #00a699;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        h1 {
+            margin: 20px 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .property-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .property-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .property-info {
+            padding: 15px;
+        }
+
+        .property-type {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .property-name {
+            font-size: 16px;
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .property-price {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .rating {
+            color: #ffd700;
+            margin: 5px 0;
+        }
+
+        .view-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #00a699;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+
+        .favorite-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .property-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="search-container">
+            <input type="text" class="search-input" id="locationInput" placeholder="Dubai, Dubai, United Arab Emirates">
+            <input type="date" class="date-input">
+            <input type="number" class="guests-input" placeholder="Guests">
+            <button class="search-button" onclick="loadProperties()">Search</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>United Arab Emirates Vacation Rentals & Rent By Owner Homes</h1>
+        <div class="property-grid" id="propertyGrid"></div>
+    </div>
+
+    <script>
+        function loadProperties() {
+            var location = $("#locationInput").val();
+            if (!location) {
+                alert("Please enter a location");
+                return;
+            }
+
+            $("#breadcrumb").text("Location: " + location);
+            $("#tiles").empty();
+
+            $.ajax({
+                url: "/v1/property/list",
+                method: "GET",
+                data: { location: location },
+                success: function(data) {
+                    renderProperties(data);
+                },
+                error: function() {
+                    alert("Failed to load properties");
+                }
+            });
+        }
+
+        function renderProperties(properties) {
+            const grid = document.getElementById('propertyGrid');
+            grid.innerHTML = ''; // Clear existing properties
+            properties.forEach(property => {
+                const propertyCard = `
+                    <div class="property-card">
+                        <img src="${property.image}" alt="${property.PropertyName}" class="property-image">
+                        <button class="favorite-button">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <div class="property-info">
+                            <div class="property-type">${property.Type}</div>
+                            <h3 class="property-name">${property.PropertyName}</h3>
+                            <div class="property-price">From ${property.Price}</div>
+                            <div class="rating">
+                                ${"★".repeat(Math.floor(property.Rating))}${property.Rating % 1 >= 0.5 ? "½" : ""}
+                                <span style="color: #666">(${property.Reviews} reviews)</span>
+                            </div>
+                            <button class="view-button">View Availability</button>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', propertyCard);
+            });
+        }
+
+        $(document).ready(function() {
+          const properties = [
+            {
+                image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23ddd'/%3E%3C/svg%3E",
+                type: "Villa",
+                name: "SLS Superior Villa in Dubai Paradise Luxury Villa in Palm...",
+                price: "From 595,745",
+                rating: 4.5,
+                reviews: 12
+            },
+            // Add more properties as needed
+        ];
+
+        function renderProperties() {
+            const grid = document.getElementById('propertyGrid');
+            properties.forEach(property => {
+                const propertyCard = `
+                    <div class="property-card">
+                        <img src="${property.image}" alt="${property.name}" class="property-image">
+                        <button class="favorite-button">
+                            <i class="far fa-heart"></i>
+                        </button>
+                        <div class="property-info">
+                            <div class="property-type">${property.type}</div>
+                            <h3 class="property-name">${property.name}</h3>
+                            <div class="property-price">${property.price}</div>
+                            <div class="rating">
+                                ${"★".repeat(Math.floor(property.rating))}${property.rating % 1 >= 0.5 ? "½" : ""}
+                                <span style="color: #666">(${property.reviews} reviews)</span>
+                            </div>
+                            <button class="view-button">View Availability</button>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', propertyCard);
+            });
+        }
+
+        $(document).ready(function() {
+            renderProperties();
+        });
+        });
+    </script>
+</body>
+</html>
+
+
+
+ -->
+</html>

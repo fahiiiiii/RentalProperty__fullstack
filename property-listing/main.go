@@ -12,6 +12,9 @@ import (
     "property-listing/conf"
     "property-listing/controllers"
 
+    // "property-listing/routers"
+    "github.com/beego/beego/v2/server/web"
+
     // "io/ioutil"
     
 )
@@ -20,69 +23,84 @@ func main() {
     
     // Initialize database
     conf.InitDB()
-
+    
     // Create a new controller instance
     controller := controllers.NewBookingController()
 
-
-
-
-   
-
-
-
-
-
-    // //!for updating property
-    // bookingController := controllers.NewBookingController()
-    // err := bookingController.UpdatePropertyNames()
-    // if err != nil {
-    //     log.Fatal(err)
-    // }
-    // log.Println("Property names updated successfully")
-
-
-
-
-
-
+    web.Router("/", controller, "get:Index")
+    web.Router("/v1/property/list", controller, "get:ListProperties")
+    
+    web.Run()
 
     
-    // fmt.Println("Processing cities...")
-    // err := controller.ProcessAllCities()
-    // if err != nil {
-    //     log.Fatalf("Failed to process cities: %v", err)
-    // }
 
-    // // Process properties for all cities
-    // fmt.Println("Processing properties...")
-    // err  = controller.ProcessAllProperties()
-    // if err != nil {
-    //     log.Fatalf("Failed to process properties: %v", err)
-    // }
+    
+    fmt.Println("Processing cities...")
+    err := controller.ProcessAllCities()
+    if err != nil {
+        log.Fatalf("Failed to process cities: %v", err)
+    }
+    
+    // Process properties for all cities
+    fmt.Println("Processing properties...")
+    err  = controller.ProcessAllProperties()
+    if err != nil {
+        log.Fatalf("Failed to process properties: %v", err)
+    }
+    
+    // Save data to database
+    fmt.Println("Saving data to database...")
+    err = controller.SaveToDatabase()
+    if err != nil {
+        log.Fatalf("Failed to save to database: %v", err)
+    }
+    
+    //!save rental property data
+    // Save rental properties to database
+    fmt.Println("Saving rental properties to database...")
+    err = controller.SaveRentalPropertiesToDatabase() // Call the new function here
+    if err != nil {
+        log.Fatalf("Failed to save rental properties to database: %v", err)
+    }
 
-    // // Save data to database
-    // fmt.Println("Saving data to database...")
-    // err = controller.SaveToDatabase()
-    // if err != nil {
-    //     log.Fatalf("Failed to save to database: %v", err)
-    // }
 
 
-
-
-
-     // Finally, process hotel details
+     //! Finally, process hotel details
      fmt.Println("Processing Hoteldetails...")
-     err := controller.ProcessAllHotelDetails()
+     err = controller.ProcessAllHotelDetails()
      if err != nil {
          log.Fatalf("Error processing hotel details: %v", err)
      }
+     
+     
+     //! Process hotel descriptions
+     fmt.Println("Processing hotel descriptions...")
+     err = controller.ProcessAllHotelDescriptions() // Call to process hotel descriptions
+     if err != nil {
+         log.Fatalf("Error processing hotel descriptions: %v", err)
+    }
+    
 
-
-
-
-
+    //!for fetching images
+    err = controller.ProcessAllHotelImages()
+    if err != nil {
+        log.Fatalf("Failed to process hotel images: %v", err)
+    }
+    //!for rating review
+    err = controller.ProcessAllHotelRatingsAndReviews()
+    if err != nil {
+        log.Fatalf("Failed to process hotel ratings and reviews: %v", err)
+    }
+    
+    //!for stroring  desc,images and rating review
+    
+    fmt.Println("Saving rental properties to database...")
+    controller.ProcessPropertyDetails() // Call the new function here
+    if err != nil {
+        log.Fatalf("Failed to save property details to database: %v", err)
+    }
+    
+    
     // Get the final summary
     summary := controller.GetSummary()
 
@@ -91,15 +109,21 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to create JSON summary: %v", err)
     }
-
+    
     // Save JSON to file
     err = os.WriteFile("city_summary.json", summaryJSON, 0644)
     if err != nil {
         log.Printf("Failed to save JSON summary: %v", err)
-    } else {
+        } else {
         fmt.Println("JSON Summary saved to city_summary.json")
     }
 
+    
+    
+    // //!for fetching againgst created api
+    web.Run()
+    
+    
    
 }
 
