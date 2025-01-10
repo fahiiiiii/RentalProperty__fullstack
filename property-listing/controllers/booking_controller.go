@@ -1469,3 +1469,25 @@ func (c *BookingController) ListProperties() {
 func (c *BookingController) Index() {
     c.TplName = "index.html"
 }
+
+//!GET property details:
+func (c *BookingController) GetPropertyDetails() {
+    propertyIdStr := c.Ctx.Input.Param(":propertyId")
+    propertyId, err := strconv.Atoi(propertyIdStr)
+    if err != nil {
+        c.Ctx.Output.SetStatus(400)
+        c.Ctx.Output.Body([]byte("Invalid property ID"))
+        return
+    }
+
+    var property models.Property
+    result := conf.DB.First(&property, propertyId)
+    if result.Error != nil {
+        c.Ctx.Output.SetStatus(404)
+        c.Ctx.Output.Body([]byte("Property not found"))
+        return
+    }
+
+    c.Data["json"] = property
+    c.ServeJSON()
+}

@@ -29,7 +29,10 @@ func main() {
 
     web.Router("/", controller, "get:Index")
     web.Router("/v1/property/list", controller, "get:ListProperties")
-    
+    web.Router("/v1/property/details/:propertyId", controller, "get:GetPropertyDetails")
+
+    // Serve static files
+    web.SetStaticPath("/static", "static")
     web.Run()
 
     
